@@ -158,6 +158,55 @@
     font-weight: bold;
     font-size: 0.8rem;
   }
+  /* 説明文の基本スタイル（5行制限） */
+.rss-description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  overflow: hidden;
+  line-height: 1.4;
+  height: 7em;
+  margin-bottom: 10px;
+  word-break: break-all;
+  position: relative; /* 子要素の基準にする */
+  transition: all 0.3s ease;
+  cursor: help; /* ホバーできることを示すアイコン */
+}
+
+/* 説明文の基本スタイル */
+.rss-description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  overflow: hidden;
+  line-height: 1.5;
+  height: 7.5em; /* 1.5行 × 5行分 */
+  margin-bottom: 10px;
+  word-break: break-all;
+  position: relative;
+  transition: background-color 0.2s;
+  cursor: help;
+}
+
+/* ホバー時のオーバーレイ表示（はみ出し防止版） */
+/* 別案：重ならないスタイル（カード内でスクロール） */
+.rss-description:hover {
+  display: block;
+  overflow-y: auto;
+  /* position: absolute; を書かない */
+  background: #fff;
+  z-index: 1;
+}
+
+/* 親要素の基準設定（必須） */
+.card-content {
+  position: relative; 
+}
+
+/* 親要素（card-content）に基準を設定 */
+.card-content {
+  position: relative; 
+}
 </style>
 </body>
 </html>

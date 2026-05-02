@@ -49,81 +49,83 @@ class RssScanner {
         
         // 取得数を8に設定
         Array.from(items).slice(0, 8).forEach((item, index) => {
+            // 1. 基本情報の取得
             const title = item.querySelector("title")?.textContent || "No Title";
-            
-            // --- リンク取得 (RDF / Atom / RSS2.0対応) ---
             const linkTag = item.querySelector("link");
             const link = linkTag?.getAttribute("href") || linkTag?.textContent || "#";
-            
-            // --- 日付取得 (dc:date(RDF), pubDate, updated対応) ---
-            const dateText = item.querySelector("pubDate")?.textContent || 
-                             item.getElementsByTagName("dc:date")[0]?.textContent ||
-                             item.querySelector("updated")?.textContent || 
-                             item.querySelector("published")?.textContent || "";
-            
-            let displayDate = "不明";
-            if (dateText) {
-                const dateObj = new Date(dateText);
-                if (!isNaN(dateObj.getTime())) {
-                    displayDate = dateObj.toLocaleDateString();
-                }
-            }
 
-            // --- 画像取得ロジックの強化 ---
+            // 2. 説明文の取得と掃除
+            let rawDescription = item.querySelector("description")?.textContent || 
+                                item.querySelector("summary")?.textContent || 
+                                item.getElementsByTagName("content:encoded")[0]?.textContent || "";
+            const cleanDescription = rawDescription.replace(/<[^>]*>?/gm, '').trim();
+
+            // 3. 日付の取得
+            const dateText = item.querySelector("pubDate")?.textContent || 
+                            item.getElementsByTagName("dc:date")[0]?.textContent ||
+                            item.querySelector("updated")?.textContent || "";
+            let displayDate = dateText ? new Date(dateText).toLocaleDateString() : "不明";
+
+            // ★ 4. 画像の取得 (ここが抜けていたはずです！) ★
             let imageUrl = "";
             const mediaThumb = item.getElementsByTagName("media:thumbnail")[0];
             const mediaContent = item.getElementsByTagName("media:content")[0];
             const enclosure = item.querySelector("enclosure");
-            
-            // RDFや一部のブログ形式で本文(content:encoded)に画像がある場合を考慮
-            const description = item.querySelector("description")?.textContent || "";
-            const contentEncoded = item.getElementsByTagName("content:encoded")[0]?.textContent || "";
 
-            if (mediaThumb) imageUrl = mediaThumb.getAttribute("url");
-            else if (mediaContent) imageUrl = mediaContent.getAttribute("url");
-            else if (enclosure) imageUrl = enclosure.getAttribute("url");
-            else {
-                // 本文内のimgタグを検索
-                const imgMatch = (contentEncoded + description).match(/<img[^>]+src=["'](https?:\/\/[^"']+)["']/i);
+            if (mediaThumb) {
+                imageUrl = mediaThumb.getAttribute("url");
+            } else if (mediaContent) {
+                imageUrl = mediaContent.getAttribute("url");
+            } else if (enclosure) {
+                imageUrl = enclosure.getAttribute("url");
+            } else {
+                // 説明文や本文の中からimgタグを探す
+                const imgMatch = (rawDescription).match(/<img[^>]+src=["'](https?:\/\/[^"']+)["']/i);
                 if (imgMatch) imageUrl = imgMatch[1];
             }
 
-            if (!imageUrl) imageUrl = "noimage.jpg";
+            // 画像が見つからない場合のデフォルト
+            if (!imageUrl) imageUrl = "noimage.jpg"; 
 
+            // 5. HTMLを組み立てる (ここで imageUrl と cleanDescription を使う)
             const isYouTube = link.includes('youtube.com') || link.includes('youtu.be');
             const modalId = `modal_${index}`;
 
             const cardHtml = `
                 <div class="col s12 m6 l4" style="margin-bottom: 20px; display: flex;">
                     <div class="card hoverable" style="display: flex; flex-direction: column; width: 100%; margin: 0; overflow: hidden; background-color: #fff;">
-                        <div class="card-image" style="flex-shrink: 0; background-color: transparent;">
-                            <img src="${imageUrl}" style="width: 100%; height: auto; display: block;" onerror="this.onerror=null; this.src='noimage.jpg';">
+                        <div class="card-image" style="flex-shrink: 0; height: 180px; overflow: hidden;">
+                            <!-- imageUrl がここで使われます -->
+                            <img src="${imageUrl}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='noimage.jpg';">
                         </div>
                         
-                        <div style="background: #444; color: #fff; padding: 10px; font-size: 0.9rem; line-height: 1.4; font-weight: bold;">
+                        <div style="background: #444; color: #fff; padding: 10px; font-size: 0.9rem; font-weight: bold; line-height: 1.4;">
                             ${title}
                         </div>
 
-                        <div class="card-content" style="padding: 12px; flex-grow: 1;">
-                             <p class="grey-text" style="font-size: 0.7rem;">更新: ${displayDate}</p>
+                        <div class="card-content" style="padding: 12px; flex-grow: 1; display: flex; flex-direction: column;">
+                            <p class="rss-description">
+                                ${cleanDescription || "記事の概要はありません。"}
+                            </p>
+                            <div style="margin-top: auto;">
+                                <p class="grey-text" style="font-size: 0.7rem;">更新: ${displayDate}</p>
+                            </div>
                         </div>
 
                         <div class="card-action" style="padding: 0; border-top: none;">
                             <a href="${link}" target="_blank" class="waves-effect waves-light btn-small ${isYouTube ? 'red darken-3' : 'light-blue accent-4'}" 
                             style="width: 100%; margin: 0; border-radius: 0; height: 40px; line-height: 40px; box-shadow: none; text-transform: none; display: block; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.2);">
-                                <i class="material-icons left" style="margin-right: 8px;">${isYouTube ? 'play_arrow' : 'open_in_new'}</i>
                                 ${isYouTube ? 'YouTubeで見る' : '記事を読む'}
                             </a>
-
                             <a href="#${modalId}" class="waves-effect waves-light btn-small green darken-3 modal-trigger" 
                             style="width: 100%; margin: 0; border-radius: 0; height: 40px; line-height: 40px; box-shadow: none; text-transform: none; display: block; text-align: center;">
-                                <i class="material-icons left" style="margin-right: 8px;">qr_code</i>
                                 QRコードを表示
                             </a>
                         </div>
                     </div>
                 </div>
 
+                <!-- モーダル部分 -->
                 <div id="${modalId}" class="modal" style="max-width: 350px; text-align: center;">
                     <div class="modal-content">
                         <h6 style="font-weight:bold; margin-bottom: 20px;">QRコードを読み込む</h6>
@@ -131,7 +133,7 @@ class RssScanner {
                         <p style="font-size: 0.7rem; color: #666; margin-top: 15px; word-break: break-all; overflow-wrap: break-word;">
                             ${link}
                         </p>
-                        </div>
+                    </div>
                     <div class="modal-footer">
                         <a href="#!" class="modal-close waves-effect waves-green btn-flat">閉じる</a>
                     </div>
