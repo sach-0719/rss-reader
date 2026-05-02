@@ -102,32 +102,45 @@
   /* ...以下略... */
 </style>
 <style>
-/* 親要素：Flexboxで左寄せを徹底 */
-  #news-container {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: flex-start; /* 左寄せ */
-      align-items: stretch;        /* 同じ行のカードの高さを揃える */
-      margin: 0 -0.75rem;          /* Materializeの余白調整 */
-  }
+/* 親要素：隙間なく左に詰めるための設定 */
+#news-container {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important; /* 絶対に左寄せ */
+    align-items: stretch !important;
+    margin-right: -0.75rem;
+    margin-left: -0.75rem;
+}
 
-  /* 子要素：カラムの幅を固定し、floatを解除 */
-  #news-container > .col {
-      float: none !important;      /* floatを無効化してFlexboxを優先 */
-      display: flex;               /* 中のカードを縦いっぱいに広げるため */
-      padding: 0 0.75rem;          /* カード間の左右の隙間 */
-  }
+/* 子要素：カードの「居場所」を固定する */
+#news-container > .col {
+    float: none !important; /* floatを完全に殺す */
+    display: flex !important;
+    margin: 0 !important;  /* 余計なマージンを消す */
+    padding: 10px 0.75rem !important; /* 上下左右の余白を均一に */
+}
 
-  /* 画面サイズごとの横幅指定（重要） */
-  @media only screen and (min-width: 993px) {
-      #news-container > .col.l4 { width: 33.3333% !important; } /* 3列 */
-  }
-  @media only screen and (min-width: 601px) and (max-width: 992px) {
-      #news-container > .col.m6 { width: 50% !important; }    /* 2列 */
-  }
-  @media only screen and (max-width: 600px) {
-      #news-container > .col.s12 { width: 100% !important; }   /* 1列 */
-  }
+/* 画面サイズごとの横幅を1%の狂いもなく固定する */
+@media only screen and (min-width: 993px) {
+    #news-container > .col.l4 {
+        flex: 0 0 33.3333% !important; /* 3列：絶対に3分の1の幅 */
+        max-width: 33.3333% !important;
+    }
+}
+
+@media only screen and (min-width: 601px) and (max-width: 992px) {
+    #news-container > .col.m6 {
+        flex: 0 0 50% !important; /* 2列：半分 */
+        max-width: 50% !important;
+    }
+}
+
+@media only screen and (max-width: 600px) {
+    #news-container > .col.s12 {
+        flex: 0 0 100% !important; /* 1列：全幅 */
+        max-width: 100% !important;
+    }
+}
   .card {
     margin: 0.5rem 0 1rem 0;
     transition: transform 0.2s;
