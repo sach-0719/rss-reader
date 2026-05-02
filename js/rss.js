@@ -108,8 +108,10 @@ render(items) {
                     <div class="modal-content">
                         <h6 style="font-weight:bold; margin-bottom: 20px;">QRコードを読み込む</h6>
                         <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}" alt="QR Code" style="width: 200px; height: 200px;">
-                        <p style="font-size: 0.8rem; color: #666; margin-top: 15px;">このQRコードをカメラでスキャンして、モバイル端末などからアクセスできます。</p>
-                    </div>
+                        <p style="font-size: 0.7rem; color: #666; margin-top: 15px; word-break: break-all; overflow-wrap: break-word;">
+                            ${link}
+                        </p>
+                        </div>
                     <div class="modal-footer">
                         <a href="#!" class="modal-close waves-effect waves-green btn-flat">閉じる</a>
                     </div>
