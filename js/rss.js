@@ -1,5 +1,5 @@
 /**
- * RSS Scanner & Manager - All in One (修正版)
+ * RSS Scanner & Manager - RDF/RSS/Atom対応強化版
  */
 class RssScanner {
     constructor(containerId) {
@@ -30,6 +30,7 @@ class RssScanner {
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(xmlText, "text/xml");
 
+            // RSS 1.0(RDF), 2.0(item), Atom(entry) すべてを対象にする
             let items = xmlDoc.querySelectorAll("item, entry");
 
             if (items.length === 0) {
@@ -43,39 +44,60 @@ class RssScanner {
         }
     }
 
-render(items) {
+    render(items) {
         this.container.innerHTML = "";
         
-        Array.from(items).slice(0, 42).forEach((item, index) => { // indexを追加
+        // 取得数を8に設定
+        Array.from(items).slice(0, 8).forEach((item, index) => {
             const title = item.querySelector("title")?.textContent || "No Title";
+            
+            // --- リンク取得 (RDF / Atom / RSS2.0対応) ---
             const linkTag = item.querySelector("link");
             const link = linkTag?.getAttribute("href") || linkTag?.textContent || "#";
             
-            // --- 日付・画像取得ロジック（中略） ---
-            const dateText = item.querySelector("pubDate")?.textContent || item.querySelector("updated")?.textContent || item.querySelector("published")?.textContent || "";
-            let displayDate = dateText ? new Date(dateText).toLocaleDateString() : "不明";
+            // --- 日付取得 (dc:date(RDF), pubDate, updated対応) ---
+            const dateText = item.querySelector("pubDate")?.textContent || 
+                             item.getElementsByTagName("dc:date")[0]?.textContent ||
+                             item.querySelector("updated")?.textContent || 
+                             item.querySelector("published")?.textContent || "";
+            
+            let displayDate = "不明";
+            if (dateText) {
+                const dateObj = new Date(dateText);
+                if (!isNaN(dateObj.getTime())) {
+                    displayDate = dateObj.toLocaleDateString();
+                }
+            }
 
+            // --- 画像取得ロジックの強化 ---
             let imageUrl = "";
             const mediaThumb = item.getElementsByTagName("media:thumbnail")[0];
-            const mediaContent = item.getElementsByTagName("media:content")[0] || item.getElementsByTagName("content")[0];
+            const mediaContent = item.getElementsByTagName("media:content")[0];
+            const enclosure = item.querySelector("enclosure");
+            
+            // RDFや一部のブログ形式で本文(content:encoded)に画像がある場合を考慮
+            const description = item.querySelector("description")?.textContent || "";
+            const contentEncoded = item.getElementsByTagName("content:encoded")[0]?.textContent || "";
+
             if (mediaThumb) imageUrl = mediaThumb.getAttribute("url");
             else if (mediaContent) imageUrl = mediaContent.getAttribute("url");
+            else if (enclosure) imageUrl = enclosure.getAttribute("url");
             else {
-                const imgMatch = (item.querySelector("description")?.textContent || "").match(/<img[^>]+src=["'](https?:\/\/[^"']+)["']/i);
+                // 本文内のimgタグを検索
+                const imgMatch = (contentEncoded + description).match(/<img[^>]+src=["'](https?:\/\/[^"']+)["']/i);
                 if (imgMatch) imageUrl = imgMatch[1];
             }
+
             if (!imageUrl) imageUrl = "noimage.jpg";
 
             const isYouTube = link.includes('youtube.com') || link.includes('youtu.be');
-
-            // IDをユニークにする（modal_0, modal_1...）
             const modalId = `modal_${index}`;
 
             const cardHtml = `
                 <div class="col s12 m6 l4" style="margin-bottom: 20px; display: flex;">
                     <div class="card hoverable" style="display: flex; flex-direction: column; width: 100%; margin: 0; overflow: hidden; background-color: #fff;">
                         <div class="card-image" style="flex-shrink: 0; background-color: transparent;">
-                            <img src="${imageUrl}" style="width: 100%; height: auto; display: block;">
+                            <img src="${imageUrl}" style="width: 100%; height: auto; display: block;" onerror="this.onerror=null; this.src='noimage.jpg';">
                         </div>
                         
                         <div style="background: #444; color: #fff; padding: 10px; font-size: 0.9rem; line-height: 1.4; font-weight: bold;">
@@ -93,7 +115,6 @@ render(items) {
                                 ${isYouTube ? 'YouTubeで見る' : '記事を読む'}
                             </a>
 
-                            <!-- ボタン2：hrefをユニークなIDに合わせる -->
                             <a href="#${modalId}" class="waves-effect waves-light btn-small green darken-3 modal-trigger" 
                             style="width: 100%; margin: 0; border-radius: 0; height: 40px; line-height: 40px; box-shadow: none; text-transform: none; display: block; text-align: center;">
                                 <i class="material-icons left" style="margin-right: 8px;">qr_code</i>
@@ -103,7 +124,6 @@ render(items) {
                     </div>
                 </div>
 
-                <!-- モーダル本体：IDをユニークにする -->
                 <div id="${modalId}" class="modal" style="max-width: 350px; text-align: center;">
                     <div class="modal-content">
                         <h6 style="font-weight:bold; margin-bottom: 20px;">QRコードを読み込む</h6>
@@ -120,7 +140,7 @@ render(items) {
             this.container.insertAdjacentHTML('beforeend', cardHtml);
         });
 
-        // 重要：HTMLを追加し終わった後に、モーダルを初期化する
+        // モーダルを初期化
         const elems = document.querySelectorAll('.modal');
         M.Modal.init(elems);
     }
@@ -141,6 +161,7 @@ class RssConfigManager {
             this.input.value = savedUrl;
             this.scanner.load(savedUrl);
         } else {
+            // 初期表示はYahooニュースなど
             this.scanner.load("https://news.yahoo.co.jp/rss/topics/top-picks.xml");
         }
 
@@ -157,7 +178,6 @@ class RssConfigManager {
     }
 }
 
-// アプリの起動
 document.addEventListener('DOMContentLoaded', () => {
     M.AutoInit();
     const scanner = new RssScanner("news-container");
