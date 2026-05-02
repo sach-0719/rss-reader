@@ -102,10 +102,18 @@
   /* ...以下略... */
 </style>
 <style>
-  /* カードの高さを揃えるための設定 */
+  /* カードを左詰めで綺麗に並べる設定 */
   #news-container {
-    display: flex;
-    flex-wrap: wrap;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-start; /* 左寄せを明示 */
+      align-items: stretch;        /* カードの高さを揃える */
+  }
+
+  /* 各カードの幅を固定（Materializeのcolクラスの挙動を安定させる） */
+  #news-container > .col {
+      float: none !important;      /* Flexboxを使うのでfloatは無効化 */
+      display: flex;
   }
   
   .card {

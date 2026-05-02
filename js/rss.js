@@ -46,7 +46,7 @@ class RssScanner {
 render(items) {
         this.container.innerHTML = "";
         
-        Array.from(items).slice(0, 9).forEach((item, index) => { // indexを追加
+        Array.from(items).slice(0, 12).forEach((item, index) => { // indexを追加
             const title = item.querySelector("title")?.textContent || "No Title";
             const linkTag = item.querySelector("link");
             const link = linkTag?.getAttribute("href") || linkTag?.textContent || "#";
