@@ -102,20 +102,32 @@
   /* ...以下略... */
 </style>
 <style>
-  /* カードを左詰めで綺麗に並べる設定 */
+/* 親要素：Flexboxで左寄せを徹底 */
   #news-container {
       display: flex;
       flex-wrap: wrap;
-      justify-content: flex-start; /* 左寄せを明示 */
-      align-items: stretch;        /* カードの高さを揃える */
+      justify-content: flex-start; /* 左寄せ */
+      align-items: stretch;        /* 同じ行のカードの高さを揃える */
+      margin: 0 -0.75rem;          /* Materializeの余白調整 */
   }
 
-  /* 各カードの幅を固定（Materializeのcolクラスの挙動を安定させる） */
+  /* 子要素：カラムの幅を固定し、floatを解除 */
   #news-container > .col {
-      float: none !important;      /* Flexboxを使うのでfloatは無効化 */
-      display: flex;
+      float: none !important;      /* floatを無効化してFlexboxを優先 */
+      display: flex;               /* 中のカードを縦いっぱいに広げるため */
+      padding: 0 0.75rem;          /* カード間の左右の隙間 */
   }
-  
+
+  /* 画面サイズごとの横幅指定（重要） */
+  @media only screen and (min-width: 993px) {
+      #news-container > .col.l4 { width: 33.3333% !important; } /* 3列 */
+  }
+  @media only screen and (min-width: 601px) and (max-width: 992px) {
+      #news-container > .col.m6 { width: 50% !important; }    /* 2列 */
+  }
+  @media only screen and (max-width: 600px) {
+      #news-container > .col.s12 { width: 100% !important; }   /* 1列 */
+  }
   .card {
     margin: 0.5rem 0 1rem 0;
     transition: transform 0.2s;
