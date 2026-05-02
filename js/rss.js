@@ -48,7 +48,7 @@ class RssScanner {
         this.container.innerHTML = "";
         
         // 取得数を8に設定
-        Array.from(items).slice(0, 8).forEach((item, index) => {
+        Array.from(items).slice(0, 42).forEach((item, index) => {
             // 1. 基本情報の取得
             const title = item.querySelector("title")?.textContent || "No Title";
             const linkTag = item.querySelector("link");
