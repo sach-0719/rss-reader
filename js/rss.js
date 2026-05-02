@@ -113,12 +113,19 @@ class RssScanner {
                         </div>
 
                         <div class="card-action" style="padding: 0; border-top: none;">
+                            <!-- 記事を読むボタン -->
                             <a href="${link}" target="_blank" class="waves-effect waves-light btn-small ${isYouTube ? 'red darken-3' : 'light-blue accent-4'}" 
                             style="width: 100%; margin: 0; border-radius: 0; height: 40px; line-height: 40px; box-shadow: none; text-transform: none; display: block; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.2);">
+                                <!-- アイコンタグを追加 -->
+                                <i class="material-icons left" style="margin-right: 8px;">${isYouTube ? 'play_arrow' : 'open_in_new'}</i>
                                 ${isYouTube ? 'YouTubeで見る' : '記事を読む'}
                             </a>
+
+                            <!-- QRコード表示ボタン -->
                             <a href="#${modalId}" class="waves-effect waves-light btn-small green darken-3 modal-trigger" 
                             style="width: 100%; margin: 0; border-radius: 0; height: 40px; line-height: 40px; box-shadow: none; text-transform: none; display: block; text-align: center;">
+                                <!-- アイコンタグを追加 -->
+                                <i class="material-icons left" style="margin-right: 8px;">qr_code</i>
                                 QRコードを表示
                             </a>
                         </div>
