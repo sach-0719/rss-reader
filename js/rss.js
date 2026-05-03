@@ -7,14 +7,51 @@ class RssScanner {
   }
 
   // =========================
-  // 日付（完全統一版）
+  // タイトル（最強版）
   // =========================
-    getDate(item) {
+  getFeedTitle(xml) {
+    let title =
+      xml.querySelector("channel > title")?.textContent ||
+      xml.querySelector("feed > title")?.textContent ||
+      xml.querySelector("rdf\\:RDF > channel > title")?.textContent ||
+      xml.querySelector("dc\\:title")?.textContent;
+
+    if (title && title.trim()) return title.trim();
+
+    // fallback（全titleタグ）
+    const all = xml.querySelectorAll("title");
+    for (const t of all) {
+      const txt = t.textContent?.trim();
+      if (txt && txt.length > 3) return txt;
+    }
+
+    return "";
+  }
+
+  // =========================
+  // 説明（最強版）
+  // =========================
+  getFeedDescription(xml) {
+    let desc =
+      xml.querySelector("channel > description")?.textContent ||
+      xml.querySelector("feed > subtitle")?.textContent ||
+      xml.querySelector("feed > description")?.textContent ||
+      xml.querySelector("dc\\:description")?.textContent;
+
+    if (desc && desc.trim()) return desc.trim();
+
+    return "";
+  }
+
+  // =========================
+  // 日付
+  // =========================
+  getDate(item) {
     const dateText =
-        item.querySelector("pubDate")?.textContent ||
-        item.querySelector("updated")?.textContent ||
-        item.querySelector("dc\\:date")?.textContent ||
-        "";
+      item.querySelector("pubDate")?.textContent ||
+      item.querySelector("updated")?.textContent ||
+      item.querySelector("dc\\:date")?.textContent ||
+      "";
 
     if (!dateText) return "不明";
 
@@ -27,33 +64,15 @@ class RssScanner {
     const diffHour = Math.floor(diffMin / 60);
     const diffDay = Math.floor(diffHour / 24);
 
-    // ① たった今
     if (diffSec < 10) return "たった今";
-
-    // ② 秒（10〜59秒は秒表示）
     if (diffSec < 60) return `${diffSec}秒前`;
-
-    // ③ 分
     if (diffMin < 60) return `${diffMin}分前`;
-
-    // ④ 時間
     if (diffHour < 24) return `${diffHour}時間前`;
-
-    // ⑤ 日（1〜14日）
     if (diffDay < 15) return `${diffDay}日前`;
 
-    // ⑥ 詳細表示（15日以上）
     const w = ["日","月","火","水","木","金","土"];
-
-    const y = d.getFullYear();
-    const m = d.getMonth() + 1;
-    const day = d.getDate();
-    const week = w[d.getDay()];
-    const hh = String(d.getHours()).padStart(2, "0");
-    const mm = String(d.getMinutes()).padStart(2, "0");
-
-    return `${y}/${m}/${day}（${week}） ${hh}:${mm}`;
-    }
+    return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}（${w[d.getDay()]}） ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+  }
 
   // =========================
   // ロード
@@ -61,8 +80,7 @@ class RssScanner {
   async load(url) {
     if (!url) return;
 
-    this.container.innerHTML =
-      `<p style="text-align:center;">読み込み中...</p>`;
+    this.container.innerHTML = `<p style="text-align:center;">読み込み中...</p>`;
 
     try {
       const res = await fetch(`${this.proxy}${encodeURIComponent(url)}`);
@@ -73,17 +91,15 @@ class RssScanner {
         throw new Error("XML parse error");
       }
 
-      // ヘッダー
-      const channelTitle =
-        xml.querySelector("channel > title, feed > title")?.textContent;
+      // ★ここが重要（trim＋fallback）
+      let title = this.getFeedTitle(xml);
+      let desc = this.getFeedDescription(xml);
 
-      const channelDesc =
-        xml.querySelector(
-          "channel > description, feed > subtitle, feed > description"
-        )?.textContent;
+      if (!title || !title.trim()) title = "News-Spot";
+      if (!desc || !desc.trim()) desc = "RSSフィード一覧";
 
-      if (this.titleEl) this.titleEl.textContent = channelTitle || "News-Spot";
-      if (this.descEl) this.descEl.textContent = channelDesc || "RSSフィード";
+      if (this.titleEl) this.titleEl.textContent = title;
+      if (this.descEl) this.descEl.textContent = desc;
 
       const items = xml.querySelectorAll("item, entry");
       this.render(items);
@@ -107,10 +123,7 @@ class RssScanner {
     if (href?.startsWith("http")) return href;
     if (text?.startsWith("http")) return text;
 
-    const enclosure = item.querySelector("enclosure");
-    if (enclosure?.getAttribute("url")) return enclosure.getAttribute("url");
-
-    return "#";
+    return item.querySelector("enclosure")?.getAttribute("url") || "#";
   }
 
   // =========================
@@ -120,17 +133,13 @@ class RssScanner {
     const enclosure = item.querySelector("enclosure");
     if (enclosure?.getAttribute("url")) return enclosure.getAttribute("url");
 
-    const mediaThumb = item.getElementsByTagName("media:thumbnail")[0];
-    if (mediaThumb) return mediaThumb.getAttribute("url");
+    const thumb = item.getElementsByTagName("media:thumbnail")[0];
+    if (thumb) return thumb.getAttribute("url");
 
-    const mediaContent = item.getElementsByTagName("media:content")[0];
-    if (mediaContent) return mediaContent.getAttribute("url");
-
-    if (link.includes("youtube.com") || link.includes("youtu.be")) {
+    if (link.includes("youtu")) {
       const id =
         link.match(/v=([^&]+)/)?.[1] ||
         link.match(/youtu\.be\/([^?&]+)/)?.[1];
-
       if (id) return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
     }
 
@@ -143,13 +152,7 @@ class RssScanner {
   // =========================
   cleanText(text) {
     return (text || "")
-      .replace(/<br\s*\/?>/gi, " ")
-      .replace(/<\/p>/gi, " ")
-      .replace(/<p[^>]*>/gi, "")
-      .replace(/<div[^>]*>/gi, "")
-      .replace(/<\/div>/gi, " ")
       .replace(/<[^>]+>/g, "")
-      .replace(/&nbsp;/g, " ")
       .replace(/\s+/g, " ")
       .trim();
   }
@@ -167,7 +170,6 @@ class RssScanner {
       const rawDesc =
         item.querySelector("description")?.textContent ||
         item.querySelector("summary")?.textContent ||
-        item.querySelector("content")?.textContent ||
         "";
 
       const desc = this.cleanText(rawDesc);
@@ -177,28 +179,26 @@ class RssScanner {
       const modalId = `qr_${i}`;
 
       const html = `
-        <div class="news-item">
+        <div class="col s12 m6 l4">
           <div class="card">
 
             <div class="card-image">
               <img src="${image}" onerror="this.src='noimage.jpg'">
             </div>
 
-            <div class="card-title-box">
-              ${title}
-            </div>
+            <div class="card-content">
+              <span class="card-title">${title}</span>
 
-            <div class="rss-description">
-              ${desc}
-            </div>
+              <p class="rss-description">${desc}</p>
 
-            <div style="font-size:12px;color:#777;margin-top:6px;padding:0 10px;">
-              <i class="material-icons" style="font-size:14px;vertical-align:middle;">schedule</i>
-              ${date}
+              <div style="font-size:12px;color:#777;margin-top:6px;">
+                <i class="material-icons" style="font-size:14px;">schedule</i>
+                ${date}
+              </div>
             </div>
 
             <div class="card-action" style="display:flex;justify-content:space-around;">
-              <a href="${link}" target="_blank" rel="noopener noreferrer">
+              <a href="${link}" target="_blank">
                 <i class="material-icons blue-text">open_in_new</i>
               </a>
 
@@ -213,13 +213,7 @@ class RssScanner {
         <div id="${modalId}" class="modal">
           <div class="modal-content" style="text-align:center;">
             <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}">
-            <h6 style="word-break:break-all;">${link}</h6>
-          </div>
-
-          <div class="modal-footer">
-            <a href="#!" class="modal-close btn-flat">
-              <i class="material-icons">close</i>
-            </a>
+            <p style="word-break:break-all;">${link}</p>
           </div>
         </div>
       `;
@@ -231,9 +225,9 @@ class RssScanner {
   }
 }
 
-/**
- * 設定管理
- */
+// =========================
+// URL管理
+// =========================
 class RssConfigManager {
   constructor(scanner) {
     this.scanner = scanner;
@@ -259,19 +253,17 @@ class RssConfigManager {
 
       localStorage.setItem(this.key, url);
       this.scanner.load(url);
-
-      const nav = M.Sidenav.getInstance(document.querySelector(".sidenav"));
-      if (nav) nav.close();
-
-      M.toast({ html: "更新しました" });
     });
   }
 }
+
+// =========================
+// ファイル読み込み
+// =========================
 class RssFileManager {
   constructor(scanner) {
     this.scanner = scanner;
     this.input = document.getElementById("rss-file-input");
-
     this.init();
   }
 
@@ -283,13 +275,7 @@ class RssFileManager {
       if (!file) return;
 
       const reader = new FileReader();
-
-      reader.onload = (event) => {
-        const text = event.target.result;
-
-        this.parseXml(text);
-      };
-
+      reader.onload = (ev) => this.parseXml(ev.target.result);
       reader.readAsText(file);
     });
   }
@@ -297,41 +283,28 @@ class RssFileManager {
   parseXml(text) {
     const xml = new DOMParser().parseFromString(text, "text/xml");
 
-    // XMLエラー検知
-    if (xml.querySelector("parsererror")) {
-      alert("XMLの読み込みに失敗しました");
-      return;
-    }
+    let title = this.scanner.getFeedTitle(xml);
+    let desc = this.scanner.getFeedDescription(xml);
 
-    // タイトル反映
-    const title =
-      xml.querySelector("channel > title, feed > title")?.textContent;
+    if (!title) title = "ローカルRSS";
+    if (!desc) desc = "ローカルファイル";
 
-    const desc =
-      xml.querySelector(
-        "channel > description, feed > subtitle, feed > description"
-      )?.textContent;
+    if (this.scanner.titleEl) this.scanner.titleEl.textContent = title;
+    if (this.scanner.descEl) this.scanner.descEl.textContent = desc;
 
-    if (this.scanner.titleEl) {
-      this.scanner.titleEl.textContent = title || "ローカルRSS";
-    }
-
-    if (this.scanner.descEl) {
-      this.scanner.descEl.textContent = desc || "ローカルファイル";
-    }
-
-    // アイテム取得
     const items = xml.querySelectorAll("item, entry");
-
     this.scanner.render(items);
   }
 }
 
+// =========================
+// 初期化
+// =========================
 document.addEventListener("DOMContentLoaded", () => {
   M.AutoInit();
 
   const scanner = new RssScanner("news-container");
 
   new RssConfigManager(scanner);
-  new RssFileManager(scanner); // ←これ追加
+  new RssFileManager(scanner);
 });
