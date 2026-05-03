@@ -10,38 +10,8 @@
   <!-- CSS読み込み -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
-  
-  <style>
-    .card-image img { height: 180px; object-fit: cover; }
-    .card-title { background: rgba(0,0,0,0.6); width: 100%; font-size: 0.9rem !important; padding: 10px !important; }
-    /* Chrome向けアイコン表示補正 */
-    .material-icons { font-family: 'Material Icons' !important; }
-    /* ロゴとアイコンの重なり防止 */
-.nav-wrapper {
-  position: relative;
-}
-
-/* ロゴの余白を確保（モバイル・PC両方） */
-.brand-logo {
-  margin-left: 20px; /* 左側に少し余裕を持たせる */
-  white-space: nowrap; /* 改行防止 */
-}
-
-/* アイコン（メニューボタン）が常に手前に来るように調整 */
-.sidenav-trigger {
-  margin: 0 !important;
-  z-index: 10;
-}
-
-/* スマホなど画面が小さい時にロゴが中央に寄って重なるのを防ぐ */
-@media only screen and (max-width: 992px) {
-  .brand-logo {
-    left: 55% !important; /* 中央より少し右に寄せる */
-    transform: translateX(-50%);
-    font-size: 1.2rem !important; /* 重なる場合は文字サイズを少し小さく */
-  }
-}
-  </style>
+  <link rel="stylesheet" href="css/materialize.css">
+  <link rel="stylesheet" href="css/rss.css">
 </head>
 <body>
 
@@ -64,17 +34,25 @@
     <div class="input-field" style="margin: 10px 0;">
       <input placeholder="https://..." id="rss-url-input" type="text">
     </div>
-    
+      <div class="file-field input-field">
+    <div class="btn green">
+      <span><i class="material-icons">upload</i></span>
+      <input type="file" id="rss-file-input" accept=".xml,.rss,.rdf">
+    </div>
+
+    <div class="file-path-wrapper">
+      <input class="file-path validate" type="text" placeholder="RSSファイルを選択">
+    </div>
+  </div>
     <button id="save-rss-btn" class="btn green" style="width: 100%; height: 36px; line-height: 36px;">
       <i class="material-icons left">save</i>更新</button>
           </li>
     <li><a href="" class="waves-effect" href="#!">このサイトについて</a></li>
 </ul>
-<h1 class="header center black-text " id="site-title">News-Spot</h1>
-          <h5 id="site-description" class="center header col s12 light black-text"> 初めてのご利用ありがとうございます！</h5>
+<h1 class="header center black-text">News-Spot</h1>
   <!-- ニュース表示エリア -->
   <div class="container">
-    <div id="news-container" class="row" style="margin-top: 20px;">
+    <div id="news-container"  style="margin-top: 20px;">
       <div class="center-align">
         <p>メニュー <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">menu</i> からRSS URLを設定してください。</p>
       </div>
@@ -88,148 +66,6 @@
   <!-- 自作のJSファイルを読み込む（これ一行にする） -->
   <script src="js/rss.js"></script>
 </body>
-  <style>
-    .rss-description {
-  /* すべての行を強制的に左端に揃える */
-  text-align: left !important;
-  text-indent: 0 !important;
-  padding-left: 0 !important;
   
-  /* \n（改行）を反映しつつ、余分な折り返し空間を作らない */
-  white-space: pre-line; 
-}
-
-/* ホバー時も同様 */
-.rss-description:hover {
-  text-indent: 0 !important;
-  padding: 10px !important; /* 内側の余白だけ確保 */
-}
-  /* 全ての要素にフォントを適用 */
-  * {
-    font-family: 'M PLUS Rounded 1c', sans-serif !important;
-  }
-
-  /* カードのタイトルなど、特定の要素で上書きされないように念押し */
-  body, input, button, .card-title, .brand-logo {
-    font-family: 'M PLUS Rounded 1c', sans-serif !important;
-  }
-  
-  /* 既存のスタイル */
-  .card-image img { height: 180px; object-fit: cover; }
-  /* ...以下略... */
-</style>
-<style>
-/* 親要素：隙間なく左に詰めるための設定 */
-#news-container {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    justify-content: flex-start !important; /* 絶対に左寄せ */
-    align-items: stretch !important;
-    margin-right: -0.75rem;
-    margin-left: -0.75rem;
-}
-
-/* 子要素：カードの「居場所」を固定する */
-#news-container > .col {
-    float: none !important; /* floatを完全に殺す */
-    display: flex !important;
-    margin: 0 !important;  /* 余計なマージンを消す */
-    padding: 10px 0.75rem !important; /* 上下左右の余白を均一に */
-}
-
-/* 画面サイズごとの横幅を1%の狂いもなく固定する */
-@media only screen and (min-width: 993px) {
-    #news-container > .col.l4 {
-        flex: 0 0 33.3333% !important; /* 3列：絶対に3分の1の幅 */
-        max-width: 33.3333% !important;
-    }
-}
-
-@media only screen and (min-width: 601px) and (max-width: 992px) {
-    #news-container > .col.m6 {
-        flex: 0 0 50% !important; /* 2列：半分 */
-        max-width: 50% !important;
-    }
-}
-
-@media only screen and (max-width: 600px) {
-    #news-container > .col.s12 {
-        flex: 0 0 100% !important; /* 1列：全幅 */
-        max-width: 100% !important;
-    }
-}
-  .card {
-    margin: 0.5rem 0 1rem 0;
-    transition: transform 0.2s;
-  }
-
-  .card:hover {
-    transform: translateY(-5px);
-  }
-
-  /* ボタンの文字サイズ微調整 */
-  .card-action .btn-small {
-    font-weight: bold;
-    font-size: 0.8rem;
-  }
-  /* 説明文の基本スタイル（5行制限） */
-.rss-description {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 5;
-  overflow: hidden;
-  line-height: 1.4;
-  height: 7em;
-  margin-bottom: 10px;
-  word-break: break-all;
-  position: relative; /* 子要素の基準にする */
-  transition: all 0.3s ease;
-  cursor: help; /* ホバーできることを示すアイコン */
-}
-
-/* 説明文の基本スタイル（5行制限 + 改行保持） */
-.rss-description {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 5;
-  overflow: hidden;
-  line-height: 1.5;
-  height: 7.5em;
-  margin-bottom: 10px;
-  word-break: break-all;
-  white-space: pre-wrap; /* \n を改行として表示 */
-  position: relative;
-  cursor: help;
-}
-
-/* ホバー・タップ時の全文表示（カード内に収める） */
-.rss-description:hover {
-  display: block;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch; /* スマホ慣性スクロール */
-  height: auto;
-  max-height: 280px;   /* カードを突き抜けない高さ */
-  background: #ffffff;
-  position: absolute;
-  z-index: 100;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-  width: 100%;
-  left: 0;
-  top: 0;
-  white-space: pre-wrap;
-}
-
-/* 親要素の基準 */
-.card-content {
-  position: relative;
-  min-height: 140px;
-}
-
-/* アイコンフォントの予備読み込み（もしHTMLに無ければ） */
-@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
-</style>
 </body>
 </html>
