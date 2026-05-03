@@ -1,210 +1,337 @@
-/**
- * RSS Scanner & Manager - Smart Header & Clean Content Version
- */
 class RssScanner {
-    constructor(containerId) {
-        this.container = document.getElementById(containerId);
-        this.siteTitleElement = document.getElementById('site-title'); 
-        this.siteDescElement = document.getElementById('site-description'); 
-        this.proxy = "https://corsproxy.io/?"; 
+  constructor(containerId) {
+    this.container = document.getElementById(containerId);
+    this.titleEl = document.getElementById("site-title");
+    this.descEl = document.getElementById("site-description");
+    this.proxy = "https://corsproxy.io/?";
+  }
+
+  // =========================
+  // 日付（完全統一版）
+  // =========================
+    getDate(item) {
+    const dateText =
+        item.querySelector("pubDate")?.textContent ||
+        item.querySelector("updated")?.textContent ||
+        item.querySelector("dc\\:date")?.textContent ||
+        "";
+
+    if (!dateText) return "不明";
+
+    const d = new Date(dateText);
+    if (isNaN(d.getTime())) return "不明";
+
+    const now = new Date();
+    const diffSec = Math.floor((now - d) / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+
+    // ① たった今
+    if (diffSec < 10) return "たった今";
+
+    // ② 秒（10〜59秒は秒表示）
+    if (diffSec < 60) return `${diffSec}秒前`;
+
+    // ③ 分
+    if (diffMin < 60) return `${diffMin}分前`;
+
+    // ④ 時間
+    if (diffHour < 24) return `${diffHour}時間前`;
+
+    // ⑤ 日（1〜14日）
+    if (diffDay < 15) return `${diffDay}日前`;
+
+    // ⑥ 詳細表示（15日以上）
+    const w = ["日","月","火","水","木","金","土"];
+
+    const y = d.getFullYear();
+    const m = d.getMonth() + 1;
+    const day = d.getDate();
+    const week = w[d.getDay()];
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mm = String(d.getMinutes()).padStart(2, "0");
+
+    return `${y}/${m}/${day}（${week}） ${hh}:${mm}`;
     }
 
-    async load(url) {
-        if (!url) return;
-        
-        this.container.innerHTML = `
-            <div class="center-align" style="padding-top: 50px;">
-                <div class="preloader-wrapper small active">
-                    <div class="spinner-layer spinner-blue-only">
-                        <div class="circle-clipper left"><div class="circle"></div></div>
-                        <div class="gap-patch"><div class="circle"></div></div>
-                        <div class="circle-clipper right"><div class="circle"></div></div>
-                    </div>
-                </div>
-            </div>`;
+  // =========================
+  // ロード
+  // =========================
+  async load(url) {
+    if (!url) return;
 
-        try {
-            const response = await fetch(`${this.proxy}${encodeURIComponent(url)}`);
-            if (!response.ok) throw new Error("通信に失敗しました");
-            
-            const xmlText = await response.text();
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+    this.container.innerHTML =
+      `<p style="text-align:center;">読み込み中...</p>`;
 
-            // --- サイト全体のタイトル(Header)を更新 ---
-            // タイトルがない場合は "News-Spot" と表示
-            const channelTitle = xmlDoc.querySelector("channel > title, feed > title")?.textContent || "News-Spot";
-            if (this.siteTitleElement) {
-                this.siteTitleElement.textContent = channelTitle;
-            }
+    try {
+      const res = await fetch(`${this.proxy}${encodeURIComponent(url)}`);
+      const text = await res.text();
+      const xml = new DOMParser().parseFromString(text, "text/xml");
 
-            // --- サイト全体の説明文(Sub-Header)を更新 ---
-            const channelDesc = xmlDoc.querySelector("channel > description, feed > subtitle")?.textContent || "";
-            if (this.siteDescElement) {
-                this.siteDescElement.textContent = channelDesc.replace(/<[^>]*>?/gm, '').trim();
-            }
+      if (xml.querySelector("parsererror")) {
+        throw new Error("XML parse error");
+      }
 
-            let items = xmlDoc.querySelectorAll("item, entry");
-            if (items.length === 0) {
-                this.container.innerHTML = '<p class="orange-text center-align">記事が見つかりませんでした。</p>';
-            } else {
-                this.render(items);
-            }
-        } catch (error) {
-            console.error(error);
-            this.container.innerHTML = `<p class="red-text center-align">エラー: ${error.message}</p>`;
-        }
+      // ヘッダー
+      const channelTitle =
+        xml.querySelector("channel > title, feed > title")?.textContent;
+
+      const channelDesc =
+        xml.querySelector(
+          "channel > description, feed > subtitle, feed > description"
+        )?.textContent;
+
+      if (this.titleEl) this.titleEl.textContent = channelTitle || "News-Spot";
+      if (this.descEl) this.descEl.textContent = channelDesc || "RSSフィード";
+
+      const items = xml.querySelectorAll("item, entry");
+      this.render(items);
+
+    } catch (e) {
+      console.error(e);
+      this.container.innerHTML =
+        `<p style="color:red;text-align:center;">読み込み失敗</p>`;
+    }
+  }
+
+  // =========================
+  // リンク取得
+  // =========================
+  getLink(item) {
+    const linkNode = item.querySelector("link");
+
+    const href = linkNode?.getAttribute("href");
+    const text = linkNode?.textContent;
+
+    if (href?.startsWith("http")) return href;
+    if (text?.startsWith("http")) return text;
+
+    const enclosure = item.querySelector("enclosure");
+    if (enclosure?.getAttribute("url")) return enclosure.getAttribute("url");
+
+    return "#";
+  }
+
+  // =========================
+  // サムネ
+  // =========================
+  getThumbnail(item, link, rawDesc) {
+    const enclosure = item.querySelector("enclosure");
+    if (enclosure?.getAttribute("url")) return enclosure.getAttribute("url");
+
+    const mediaThumb = item.getElementsByTagName("media:thumbnail")[0];
+    if (mediaThumb) return mediaThumb.getAttribute("url");
+
+    const mediaContent = item.getElementsByTagName("media:content")[0];
+    if (mediaContent) return mediaContent.getAttribute("url");
+
+    if (link.includes("youtube.com") || link.includes("youtu.be")) {
+      const id =
+        link.match(/v=([^&]+)/)?.[1] ||
+        link.match(/youtu\.be\/([^?&]+)/)?.[1];
+
+      if (id) return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
     }
 
-    render(items) {
-        this.container.innerHTML = "";
-        
-        Array.from(items).slice(0, 8).forEach((item, index) => {
-            // --- 1. タイトルの取得 (ない場合は News-Spot) ---
-            const title = item.querySelector("title")?.textContent || "News-Spot";
-            const linkTag = item.querySelector("link");
-            const link = linkTag?.getAttribute("href") || linkTag?.textContent || "#";
-            const category = item.querySelector("category")?.textContent || 
-                             item.querySelector("category")?.getAttribute("term") || "";
+    const img = rawDesc.match(/<img[^>]+src=["'](.*?)["']/i);
+    return img ? img[1] : "noimage.jpg";
+  }
 
-            // --- 2. 説明文の取得と「徹底空白除去」 ---
-            let rawDescription = item.querySelector("description")?.textContent || 
-                                item.querySelector("summary")?.textContent || 
-                                item.getElementsByTagName("content:encoded")[0]?.textContent || "";
-            
-            let cleanDescription = rawDescription
-                .replace(/&nbsp;/g, ' ')
-                .replace(/<br\s*\/?>/gi, '\n')
-                .replace(/<\/p>/gi, '\n')
-                .replace(/<[^>]*>?/gm, '');
+  // =========================
+  // テキスト整形
+  // =========================
+  cleanText(text) {
+    return (text || "")
+      .replace(/<br\s*\/?>/gi, " ")
+      .replace(/<\/p>/gi, " ")
+      .replace(/<p[^>]*>/gi, "")
+      .replace(/<div[^>]*>/gi, "")
+      .replace(/<\/div>/gi, " ")
+      .replace(/<[^>]+>/g, "")
+      .replace(/&nbsp;/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
 
-            cleanDescription = cleanDescription
-                .split('\n')
-                .map(line => line.trim())
-                .filter(line => line.length > 0)
-                .join('\n')
-                .trim();
+  // =========================
+  // 描画
+  // =========================
+  render(items) {
+    this.container.innerHTML = "";
 
-            // --- 3. 日付の取得（相対時間表示） ---
-            const dateText = item.querySelector("pubDate")?.textContent || 
-                            item.querySelector("updated")?.textContent || 
-                            item.getElementsByTagName("dc:date")[0]?.textContent || "";
-            let displayDate = "不明";
-            if (dateText) {
-                const dateObj = new Date(dateText);
-                if (!isNaN(dateObj.getTime())) {
-                    const now = new Date();
-                    const diff = Math.floor((now - dateObj) / 1000);
-                    if (diff < 3600) displayDate = `${Math.floor(diff / 60)}分前`;
-                    else if (diff < 86400) displayDate = `${Math.floor(diff / 3600)}時間前`;
-                    else displayDate = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
-                }
-            }
+    Array.from(items).slice(0, 30).forEach((item, i) => {
+      const title = item.querySelector("title")?.textContent || "";
+      const link = this.getLink(item);
 
-            // --- 4. 画像の取得 ---
-            let imageUrl = "";
-            const mediaThumb = item.getElementsByTagName("media:thumbnail")[0];
-            const mediaContent = item.getElementsByTagName("media:content")[0];
-            const enclosure = item.querySelector("enclosure");
+      const rawDesc =
+        item.querySelector("description")?.textContent ||
+        item.querySelector("summary")?.textContent ||
+        item.querySelector("content")?.textContent ||
+        "";
 
-            if (mediaThumb) imageUrl = mediaThumb.getAttribute("url");
-            else if (mediaContent) imageUrl = mediaContent.getAttribute("url");
-            else if (enclosure && enclosure.getAttribute("type")?.startsWith("image")) imageUrl = enclosure.getAttribute("url");
-            else {
-                const imgMatch = rawDescription.match(/<img[^>]+src=["'](https?:\/\/[^"']+)["']/i);
-                if (imgMatch) imageUrl = imgMatch[1];
-            }
-            if (!imageUrl) imageUrl = "noimage.jpg"; 
+      const desc = this.cleanText(rawDesc);
+      const image = this.getThumbnail(item, link, rawDesc);
+      const date = this.getDate(item);
 
-            // --- 5. HTML組み立て ---
-            const isYouTube = link.includes('youtube.com') || link.includes('youtu.be');
-            const modalId = `modal_${index}`;
+      const modalId = `qr_${i}`;
 
-            const cardHtml = `
-                <div class="col s12 m6 l4" style="margin-bottom: 20px; display: flex;">
-                    <div class="card hoverable" style="display: flex; flex-direction: column; width: 100%; margin: 0; overflow: hidden; background-color: #fff;">
-                        <div class="card-image" style="flex-shrink: 0; height: 180px; overflow: hidden; background: #eee;">
-                            <img src="${imageUrl}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='noimage.jpg';">
-                        </div>
-                        
-                        <div style="background: #444; color: #fff; padding: 10px; font-size: 0.9rem; font-weight: bold; line-height: 1.4; min-height: 3.5em;">
-                            ${title}
-                        </div>
-                        ${category ? `<div style="background: #777777; color: #fff; padding: 10px; font-size: 0.9rem; font-weight: bold; line-height: 1.4; min-height: 3.5em;">${category}</div>` : ''}
-                        <div class="card-content" style="padding: 12px; flex-grow: 1; position: relative; min-height: 140px;">
-                            <!-- 概要がない場合は何も表示しない -->
-                            ${cleanDescription ? `<p class="rss-description">${cleanDescription}</p>` : ''}
-                            
-                            <div style="margin-top: auto; display: flex; align-items: center;">
-                                <i class="material-icons grey-text" style="font-size: 0.8rem; margin-right: 4px;">access_time</i>
-                                <p class="grey-text" style="font-size: 0.75rem; margin: 0;">${displayDate}</p>
-                            </div>
-                        </div>
+      const html = `
+        <div class="news-item">
+          <div class="card">
 
-                        <div class="card-action" style="padding: 0; border-top: none;">
-                            <a href="${link}" target="_blank" class="waves-effect waves-light btn-small ${isYouTube ? 'red darken-3' : 'light-blue accent-4'}" 
-                               style="width: 100%; margin: 0; border-radius: 0; height: 40px; line-height: 40px; text-transform: none; display: block; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1);">
-                                <i class="material-icons left" style="margin-right: 8px;">${isYouTube ? 'play_arrow' : 'open_in_new'}</i>${isYouTube ? 'YouTubeで見る' : '記事を読む'}
-                            </a>
-                            <a href="#${modalId}" class="waves-effect waves-light btn-small green darken-3 modal-trigger" 
-                               style="width: 100%; margin: 0; border-radius: 0; height: 40px; line-height: 40px; text-transform: none; display: block; text-align: center;">
-                                <i class="material-icons left" style="margin-right: 8px;">qr_code</i>QRコードを表示
-                            </a>
-                        </div>
-                    </div>
-                </div>
+            <div class="card-image">
+              <img src="${image}" onerror="this.src='noimage.jpg'">
+            </div>
 
-                <div id="${modalId}" class="modal" style="max-width: 350px; text-align: center;">
-                    <div class="modal-content">
-                        <h6 style="font-weight:bold; margin-bottom: 20px;">QRコードを読み込む</h6>
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}" alt="QR Code" style="width: 200px; height: 200px;">
-                        <p style="font-size: 0.7rem; color: #666; margin-top: 15px; word-break: break-all;">${link}</p>
-                    </div>
-                    <div class="modal-footer">
-                        <a href="#!" class="modal-close waves-effect waves-green btn-flat">閉じる</a>
-                    </div>
-                </div>
-            `;
-            this.container.insertAdjacentHTML('beforeend', cardHtml);
-        });
+            <div class="card-title-box">
+              ${title}
+            </div>
 
-        M.Modal.init(document.querySelectorAll('.modal'));
-    }
+            <div class="rss-description">
+              ${desc}
+            </div>
+
+            <div style="font-size:12px;color:#777;margin-top:6px;padding:0 10px;">
+              <i class="material-icons" style="font-size:14px;vertical-align:middle;">schedule</i>
+              ${date}
+            </div>
+
+            <div class="card-action" style="display:flex;justify-content:space-around;">
+              <a href="${link}" target="_blank" rel="noopener noreferrer">
+                <i class="material-icons blue-text">open_in_new</i>
+              </a>
+
+              <a href="#${modalId}" class="modal-trigger">
+                <i class="material-icons green-text">qr_code</i>
+              </a>
+            </div>
+
+          </div>
+        </div>
+
+        <div id="${modalId}" class="modal">
+          <div class="modal-content" style="text-align:center;">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}">
+            <h6 style="word-break:break-all;">${link}</h6>
+          </div>
+
+          <div class="modal-footer">
+            <a href="#!" class="modal-close btn-flat">
+              <i class="material-icons">close</i>
+            </a>
+          </div>
+        </div>
+      `;
+
+      this.container.insertAdjacentHTML("beforeend", html);
+    });
+
+    M.Modal.init(document.querySelectorAll(".modal"));
+  }
 }
 
+/**
+ * 設定管理
+ */
 class RssConfigManager {
-    constructor(scanner) {
-        this.scanner = scanner;
-        this.input = document.getElementById('rss-url-input');
-        this.btn = document.getElementById('save-rss-btn');
-        this.key = 'user_rss_url';
-        this.init();
+  constructor(scanner) {
+    this.scanner = scanner;
+    this.input = document.getElementById("rss-url-input");
+    this.btn = document.getElementById("save-rss-btn");
+    this.key = "user_rss_url";
+    this.init();
+  }
+
+  init() {
+    const saved = localStorage.getItem(this.key);
+
+    if (saved) {
+      this.input.value = saved;
+      this.scanner.load(saved);
+    } else {
+      this.scanner.load("https://news.yahoo.co.jp/rss/topics/top-picks.xml");
     }
 
-    init() {
-        const savedUrl = localStorage.getItem(this.key);
-        if (savedUrl) {
-            this.input.value = savedUrl;
-            this.scanner.load(savedUrl);
-        } else {
-            this.scanner.load("https://news.yahoo.co.jp/rss/topics/top-picks.xml");
-        }
+    this.btn.addEventListener("click", () => {
+      const url = this.input.value.trim();
+      if (!url) return;
 
-        this.btn.addEventListener('click', () => {
-            const url = this.input.value.trim();
-            if (url) {
-                localStorage.setItem(this.key, url);
-                this.scanner.load(url);
-                const sideNav = M.Sidenav.getInstance(document.querySelector('.sidenav'));
-                if (sideNav) sideNav.close();
-                M.toast({html: 'URLを更新しました'});
-            }
-        });
+      localStorage.setItem(this.key, url);
+      this.scanner.load(url);
+
+      const nav = M.Sidenav.getInstance(document.querySelector(".sidenav"));
+      if (nav) nav.close();
+
+      M.toast({ html: "更新しました" });
+    });
+  }
+}
+class RssFileManager {
+  constructor(scanner) {
+    this.scanner = scanner;
+    this.input = document.getElementById("rss-file-input");
+
+    this.init();
+  }
+
+  init() {
+    if (!this.input) return;
+
+    this.input.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+
+      reader.onload = (event) => {
+        const text = event.target.result;
+
+        this.parseXml(text);
+      };
+
+      reader.readAsText(file);
+    });
+  }
+
+  parseXml(text) {
+    const xml = new DOMParser().parseFromString(text, "text/xml");
+
+    // XMLエラー検知
+    if (xml.querySelector("parsererror")) {
+      alert("XMLの読み込みに失敗しました");
+      return;
     }
+
+    // タイトル反映
+    const title =
+      xml.querySelector("channel > title, feed > title")?.textContent;
+
+    const desc =
+      xml.querySelector(
+        "channel > description, feed > subtitle, feed > description"
+      )?.textContent;
+
+    if (this.scanner.titleEl) {
+      this.scanner.titleEl.textContent = title || "ローカルRSS";
+    }
+
+    if (this.scanner.descEl) {
+      this.scanner.descEl.textContent = desc || "ローカルファイル";
+    }
+
+    // アイテム取得
+    const items = xml.querySelectorAll("item, entry");
+
+    this.scanner.render(items);
+  }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    M.AutoInit();
-    const scanner = new RssScanner("news-container");
-    new RssConfigManager(scanner);
-});1
+document.addEventListener("DOMContentLoaded", () => {
+  M.AutoInit();
+
+  const scanner = new RssScanner("news-container");
+
+  new RssConfigManager(scanner);
+  new RssFileManager(scanner); // ←これ追加
+});
