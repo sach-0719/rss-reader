@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <title>News-spot</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c&display=swap" rel="stylesheet">
+    <!-- CSS読み込み -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+
+</head>
+<body>
+      <!-- ナビゲーションバー -->
+  <nav class="grey accent-4" role="navigation">
+    <div class="nav-wrapper container">
+      
+      <!-- サイドバー呼び出しボタン -->
+      <a href="#" data-target="nav-mobile" class="sidenav-trigger show-on-large"><i class="material-icons">menu</i></a>
+    </div>
+  </nav>
+
+    <ul id="nav-mobile" class="sidenav">
+    <!-- タイトル部分 -->
+    <li><h5 style="padding: 0 20px;">メニュー</h5></li>
+    
+    <!-- 設定エリア -->
+
+        
+        <li><a href="index.html" class="waves-effect" href="#!"><i class="material-icons">arrow_back</i>ホームに戻る</a></li>
+    </ul>
+    <h1 class="header center black-text" >このサイトについて</h1>
+    <div class="row center">
+    <h4 class="header center black-text">免責事項</h4>
+    <h6 class="header col s12 light"> 本アプリはユーザーが指定したURLの内容を表示するツールです。<br>取得されるコンテンツの著作権は各配信元に帰属します。<br>コンテンツの利用規約については、各配信元の指示に従ってください。<br>QRコードは株式会社デンソーウェーブの登録商標です。</h6>
+    </div>
+    <!-- Scripts -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+        $(document).ready(function(){
+        $('.sidenav').sidenav();
+        });
+    </script>
+</body>
+</html>

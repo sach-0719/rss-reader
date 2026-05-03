@@ -68,7 +68,7 @@
     <button id="save-rss-btn" class="btn green" style="width: 100%; height: 36px; line-height: 36px;">
       <i class="material-icons left">save</i>更新</button>
           </li>
-
+    <li><a href="" class="waves-effect" href="#!">このサイトについて</a></li>
 </ul>
 <h1 class="header center black-text">News-Spot</h1>
   <!-- ニュース表示エリア -->
@@ -79,9 +79,7 @@
       </div>
     </div>
   </div>
-<div class="row center">
-  <h6 class="header col s12 light">免責事項: 本アプリはユーザーが指定したURLの内容を表示するツールです。<br>取得されるコンテンツの著作権は各配信元に帰属します。<br>コンテンツの利用規約については、各配信元の指示に従ってください。<br>QRコードは株式会社デンソーウェーブの登録商標です。</h6>
-</div>
+
 <!-- Scripts -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
@@ -90,6 +88,21 @@
   <script src="js/rss.js"></script>
 </body>
   <style>
+    .rss-description {
+  /* すべての行を強制的に左端に揃える */
+  text-align: left !important;
+  text-indent: 0 !important;
+  padding-left: 0 !important;
+  
+  /* \n（改行）を反映しつつ、余分な折り返し空間を作らない */
+  white-space: pre-line; 
+}
+
+/* ホバー時も同様 */
+.rss-description:hover {
+  text-indent: 0 !important;
+  padding: 10px !important; /* 内側の余白だけ確保 */
+}
   /* 全ての要素にフォントを適用 */
   * {
     font-family: 'M PLUS Rounded 1c', sans-serif !important;
@@ -173,40 +186,49 @@
   cursor: help; /* ホバーできることを示すアイコン */
 }
 
-/* 説明文の基本スタイル */
+/* 説明文の基本スタイル（5行制限 + 改行保持） */
 .rss-description {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 5;
   overflow: hidden;
   line-height: 1.5;
-  height: 7.5em; /* 1.5行 × 5行分 */
+  height: 7.5em;
   margin-bottom: 10px;
   word-break: break-all;
+  white-space: pre-wrap; /* \n を改行として表示 */
   position: relative;
-  transition: background-color 0.2s;
   cursor: help;
 }
 
-/* ホバー時のオーバーレイ表示（はみ出し防止版） */
-/* 別案：重ならないスタイル（カード内でスクロール） */
+/* ホバー・タップ時の全文表示（カード内に収める） */
 .rss-description:hover {
   display: block;
   overflow-y: auto;
-  /* position: absolute; を書かない */
-  background: #fff;
-  z-index: 1;
+  -webkit-overflow-scrolling: touch; /* スマホ慣性スクロール */
+  height: auto;
+  max-height: 280px;   /* カードを突き抜けない高さ */
+  background: #ffffff;
+  position: absolute;
+  z-index: 100;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  width: 100%;
+  left: 0;
+  top: 0;
+  white-space: pre-wrap;
 }
 
-/* 親要素の基準設定（必須） */
+/* 親要素の基準 */
 .card-content {
-  position: relative; 
+  position: relative;
+  min-height: 140px;
 }
 
-/* 親要素（card-content）に基準を設定 */
-.card-content {
-  position: relative; 
-}
+/* アイコンフォントの予備読み込み（もしHTMLに無ければ） */
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 </style>
 </body>
 </html>
