@@ -139,7 +139,11 @@ class RssScanner {
           <a href="${link}" class="left" target="_blank">
             <i class="material-icons blue-text">open_in_new</i>
           </a>
-          <a  class="left" target="_blank" id="shareBtn" style="display:none;" data-title="${title}" data-link="${link}">
+
+          <!-- 共有ボタン（常に描画） -->
+          <a href="#!" class="share-btn left" 
+            data-title="${title}" 
+            data-link="${link}">
             <i class="material-icons purple-text">share</i>
           </a>
 
@@ -147,30 +151,6 @@ class RssScanner {
             <i class="material-icons green-text">qr_code</i>
           </a>
         </div>
-        <script>
-        const shareBtn = document.getElementById('share-btn');
-        const resultPara = document.getElementById('share-result');
-
-        // Web Share API に対応しているブラウザか判定
-        if (navigator.share) {
-          // 対応している場合、ボタンを表示する
-          shareBtn.style.display = 'block';
-
-          shareBtn.addEventListener('click', async () => {
-            try {
-              await navigator.share({
-                title: ${title}, // ページのタイトル
-                url: ${link} // ページのURL
-              });
-              resultPara.textContent = '共有が完了しました。';
-            } catch (err) {
-              // ユーザーが共有をキャンセルした場合などはここに入ります
-              if (err.name !== 'AbortError') {
-                resultPara.textContent = 'エラー: ' + err;
-              }
-            }
-          });
-        }
       `;
 
       this.container.appendChild(div);
@@ -441,4 +421,30 @@ document.addEventListener("click", (e) => {
 
   const modal = M.Modal.getInstance(document.getElementById("qr-modal"));
   modal.open();
+});
+
+document.addEventListener("click", async (e) => {
+
+  const btn = e.target.closest(".share-btn");
+  if (!btn) return;
+
+  const title = btn.dataset.title || "";
+  const url = btn.dataset.link || "";
+
+  if (!navigator.share) {
+    alert("このブラウザは共有機能に対応していません");
+    return;
+  }
+
+  try {
+    await navigator.share({
+      title: title,
+      url: url
+    });
+  } catch (err) {
+    // キャンセルは無視
+    if (err.name !== "AbortError") {
+      console.error(err);
+    }
+  }
 });
