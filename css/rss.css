@@ -1,34 +1,153 @@
-/* モーダル本体 */
-.modal {
-  overflow: visible !important;
+
+/* =========================
+   CSS変数（テーマ基盤）
+========================= */
+:root {
+  --bg: #ffffff;
+  --text: #222;
+  --card: #ffffff;
+  --primary: #1565c0;
+  --icon: #555;
+  --dropdown-bg: #fff;
+  --border: #eee;
 }
 
-/* 中身も解除 */
-.modal .modal-content {
-  overflow: visible !important;
+/* ダークテーマ */
+body.dark-mode {
+  --bg: #121212;
+  --text: #e0e0e0;
+  --card: #1e1e1e;
+  --primary: #90caf9;
+  --icon: #e0e0e0;
+  --dropdown-bg: #1e1e1e;
+  --border: #333;
 }
 
-/* Materializeのスクロール制御を殺す */
-.modal-overlay {
-  overflow: visible !important;
-}
-
-/* dropdown / datepicker を最前面へ */
-.dropdown-content,
-.datepicker-modal,
-.timepicker-modal {
-  z-index: 9999 !important;
-}
 /* =========================
    ベース
 ========================= */
 body {
   font-family: 'M PLUS Rounded 1c', sans-serif;
-  background: #f5f5f5;
+  background: var(--bg);
+  color: var(--text);
 }
 
 /* =========================
-   グリッド（無限スクロール対応）
+   モーダル（完全対応）
+========================= */
+.modal {
+  background: var(--card);
+  color: var(--text);
+  overflow: visible !important;
+}
+
+.modal .modal-content {
+  background: var(--card);
+  color: var(--text);
+  overflow: visible !important;
+}
+
+.modal .modal-footer {
+  background: var(--card);
+}
+
+/* =========================
+   Materialize overlay
+========================= */
+.modal-overlay {
+  overflow: visible !important;
+}
+
+/* =========================
+   アイコン（重要）
+========================= */
+.material-icons {
+  color: var(--icon);
+}
+
+/* ボタン内は継承優先 */
+.btn .material-icons {
+  color: inherit;
+}
+
+/* =========================
+   リンク
+========================= */
+a {
+  color: var(--primary);
+}
+
+/* =========================
+   サイドバー
+========================= */
+.sidenav {
+  background: var(--card);
+}
+
+.sidenav li a {
+  color: var(--text);
+}
+
+/* =========================
+   select / dropdown
+========================= */
+.select-wrapper input.select-dropdown {
+  color: var(--text);
+}
+
+.dropdown-content {
+  background: var(--dropdown-bg);
+}
+
+.dropdown-content li > span {
+  color: var(--text);
+}
+
+/* hover */
+.dropdown-content li:hover {
+  background: rgba(144, 202, 249, 0.15);
+}
+
+/* =========================
+   datepicker（重要）
+========================= */
+.datepicker-modal {
+  background: var(--card);
+  color: var(--text);
+}
+
+.datepicker-date-display {
+  background-color: var(--primary);
+}
+
+.datepicker-table td button {
+  color: var(--text);
+}
+
+.datepicker-table td.is-selected {
+  background-color: var(--primary);
+  color: #fff;
+}
+
+/* =========================
+   RSSカード（統一）
+========================= */
+.card,
+.article {
+  background: var(--card);
+  color: var(--text);
+  border-radius: 8px;
+}
+
+/* 画像 */
+.article img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+}
+
+/* =========================
+   グリッド
 ========================= */
 #news-container {
   display: grid;
@@ -37,14 +156,12 @@ body {
   padding: 12px;
 }
 
-/* タブレット */
 @media (max-width: 992px) {
   #news-container {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-/* スマホ */
 @media (max-width: 600px) {
   #news-container {
     grid-template-columns: 1fr;
@@ -52,69 +169,65 @@ body {
 }
 
 /* =========================
-   カード
+   テキスト省略
 ========================= */
-.article {
-  background: #fff;
-  border-radius: 8px;
+.article-text,
+.card-content p {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  display: flex;
-  flex-direction: column;
+  line-height: 1.6;
 }
 
-.article img {
-  width: 100%;
-  height: 180px;
-  object-fit: cover;
-}
-
-.article-body {
-  padding: 10px;
-  flex: 1;
-}
-
+/* =========================
+   タグ
+========================= */
 .category-tag {
   display: inline-block;
   font-size: 11px;
-  background: #1976d2;
+  background: var(--primary);
   color: #fff;
   padding: 2px 6px;
   border-radius: 4px;
   margin-bottom: 6px;
 }
 
-.article-title {
-  font-weight: bold;
-  margin-bottom: 6px;
-}
-
-.article-text {
-  font-size: 13px;
-  color: #444;
-
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
+/* =========================
+   ボーダー
+========================= */
 .article-actions {
-  padding: 10px;
-  text-align: right;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--border);
 }
 
-.article-actions a {
-  color: #1976d2;
-  font-weight: bold;
-  text-decoration: none;
+/* =========================
+   input
+========================= */
+input,
+select {
+  color: var(--text);
 }
-.article .card-content p {
-  display: -webkit-box;
-  -webkit-line-clamp: 5;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-height: 1.6;
-  max-height: 8em;
+
+.input-field label {
+  color: var(--text);
+}
+
+/* focus */
+input:focus {
+  border-bottom: 1px solid var(--primary) !important;
+  box-shadow: 0 1px 0 0 var(--primary) !important;
+}
+.sidenav .material-icons {
+  color: var(--icon) !important;
+}
+
+.category-all-label span::after {
+  content: "（ー）";
+  color: #888;
+  margin-left: 6px;
+  font-size: 12px;
+}
+
+body.dark-mode .category-all-label span::after {
+  color: #aaa;
 }

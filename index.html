@@ -36,7 +36,7 @@
 ========================= -->
 <ul id="nav-mobile" class="sidenav">
   <li>
-    <h5 style="padding:10px;">RSS一覧</h5>
+    <h5 style="padding:10px;">メニュー</h5>
   </li>
 
   <li style="padding:10px;">
@@ -48,8 +48,22 @@
   </li>
   <li>
     <a href="info.html" class="waves-effect">
-      <i class="material-icons">help</i>このサイトについて
+      <i class="material-icons ">help</i>このサイトについて
     </a>
+  </li>
+<li>
+    <div class="input-field">
+      <select id="theme-select">
+        <option value="light">ライトテーマ</option>
+        <option value="dark">ダークテーマ</option>
+        <option value="system">システム</option>
+      </select>
+      <label>テーマ切替</label>
+    </div>
+  </li>
+  
+
+  </li>
 </ul>
 
 <!-- =========================
@@ -118,12 +132,7 @@ document.addEventListener('DOMContentLoaded', function () {
       <label for="search-keyword">キーワード</label>
     </div>
 
-    <div class="input-field">
-      <select id="search-category">
-        <option value="">全カテゴリ</option>
-      </select>
-      <label>カテゴリ</label>
-    </div>
+    <div id="category-checklist"></div>
 
     <div class="input-field">
       <input id="date-from" class="datepicker" type="text">
@@ -147,23 +156,78 @@ document.addEventListener('DOMContentLoaded', function () {
 <!-- =========================
   QRモーダル
 ========================= -->
+
 <div id="qr-modal" class="modal">
 
-  <div class="modal-content center">
+  <div class="modal-content">
 
-    <h5>QRコード</h5>
 
-    <img id="qr-image" style="max-width:250px;">
+<h5 class="center">QRコード</h5>
 
-    <p id="qr-url"></p>
+<!-- ローディング表示 -->
+<div id="qr-loading" class="center">
+
+  <p style="margin:0;font-size:0.9rem;color:#777;">
+    QRコード生成中...
+  </p>
+
+  <div class="progress" style="max-width:250px;margin:15px auto;">
+    <div class="indeterminate"></div>
+  </div>
+
+</div>
+
+<!-- QRコード表示エリア -->
+<div style="text-align:center;">
+
+  <img
+    id="qr-image"
+    class="responsive-img"
+    alt="QR Code"
+    style="
+      display:none;
+      width:250px;
+      max-width:100%;
+      margin:20px auto;
+    "
+  >
+
+  <p
+    id="qr-url"
+    class="grey-text text-darken-1"
+    style="
+      word-break:break-all;
+      margin-top:15px;
+    "
+  ></p>
+
+</div>
+
 
   </div>
 
   <div class="modal-footer">
-    <a class="modal-close btn-flat"><i class="material-icons">close</i></a>
+
+
+<a href="#!" class="modal-close btn-flat">
+  <i class="material-icons">close</i>
+</a>
+
+
   </div>
 
 </div>
+
+<script src="js/qrload.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  M.AutoInit();
+
+  const selects = document.querySelectorAll('select');
+  M.FormSelect.init(selects);
+});
+</script>
+
 </div>
 </body>
 </html>

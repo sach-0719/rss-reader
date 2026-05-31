@@ -158,91 +158,110 @@ class RssScanner {
   }
 
   // -------------------------
-  loadFromXMLText(text) {
+loadFromXMLText(text) {
 
-    const xml = new DOMParser().parseFromString(text, "text/xml");
+  const xml = new DOMParser().parseFromString(text, "text/xml");
 
-    const channel = xml.querySelector("channel");
+  const channel = xml.querySelector("channel");
 
-    const siteTitle =
-      channel?.querySelector("title")?.textContent?.trim() || "News-Spot";
+  const siteTitle =
+    channel?.querySelector("title")?.textContent?.trim() || "News-Spot";
 
-    const siteDesc =
-      channel?.querySelector("description")?.textContent?.trim() || "RSSニュースリーダー";
+  const siteDesc =
+    channel?.querySelector("description")?.textContent?.trim() || "RSSニュースリーダー";
 
-    // ⭐ 上部タイトル・説明（復活）
-    const titleEl = document.getElementById("site-title");
-    const descEl = document.getElementById("site-description");
+  const titleEl = document.getElementById("site-title");
+  const descEl = document.getElementById("site-description");
 
-    if (titleEl) titleEl.textContent = siteTitle;
-    if (descEl) descEl.textContent = siteDesc;
+  if (titleEl) titleEl.textContent = siteTitle;
+  if (descEl) descEl.textContent = siteDesc;
 
-    let items = xml.getElementsByTagName("item");
-    if (!items.length) items = xml.getElementsByTagName("entry");
+  let items = xml.getElementsByTagName("item");
+  if (!items.length) items = xml.getElementsByTagName("entry");
 
-    this.allItems = Array.from(items);
+  this.allItems = Array.from(items);
 
-    this.render(this.allItems);
-    this.updateCategorySelect();
-  }
-
-  // -------------------------
-  updateCategorySelect() {
-    const select = document.getElementById("search-category");
-    if (!select) return;
-
-    const categories = [...new Set(
-      this.allItems.map(i => this.getCategory(i))
-    )];
-
-    select.innerHTML = `
-      <option value="">全カテゴリ</option>
-      ${categories.map(c => `<option value="${c}">${c}</option>`).join("")}
-    `;
-
-    setTimeout(() => {
-      if (window.M) M.FormSelect.init(select);
-    }, 0);
-  }
+this.render(this.allItems);
+this.updateCategoryCheckboxes();  // ←これ追加
+updateIndeterminateState();
+}
 
   // -------------------------
-  applyFilter() {
+updateCategoryCheckboxes() {
+  const container = document.getElementById("category-checklist");
+  if (!container) return;
 
-    const keyword = (document.getElementById("search-keyword")?.value || "").toLowerCase();
-    const category = document.getElementById("search-category")?.value || "";
-    const from = document.getElementById("date-from")?.value;
-    const to = document.getElementById("date-to")?.value;
+  const categories = [...new Set(
+    this.allItems.map(i => this.getCategory(i))
+  )];
 
-    const filtered = this.allItems.filter(item => {
+  container.innerHTML = `
+    <p>
+      <label>
+        <input id="category-all" type="checkbox" />
+        <span id="category-all-text">すべて</span>
+      </label>
+    </p>
 
-      const title = item.querySelector("title")?.textContent || "";
-      const desc =
-        item.querySelector("description")?.textContent ||
-        item.querySelector("summary")?.textContent ||
-        "";
+    ${
+      categories.length > 0
+        ? categories.map(c => `
+          <p>
+            <label>
+              <input type="checkbox" class="category-item" value="${c}" />
+              <span>${c}</span>
+            </label>
+          </p>
+        `).join("")
+        : ""
+    }
+  `;
+}
+  // -------------------------
+applyFilter() {
 
-      const cat = this.getCategory(item);
+  const keyword =
+    (document.getElementById("search-keyword")?.value || "").toLowerCase();
 
-      const dateText = item.querySelector("pubDate")?.textContent;
-      const date = dateText ? new Date(dateText) : null;
+  const checkedCategories =
+    Array.from(document.querySelectorAll(".category-item:checked"))
+      .map(el => el.value);
 
-      const matchKeyword =
-        !keyword ||
-        title.toLowerCase().includes(keyword) ||
-        desc.toLowerCase().includes(keyword);
+  const allChecked =
+    document.querySelector(".category-all")?.checked ||
+    document.querySelector(".category-all")?.indeterminate;
 
-      const matchCategory =
-        !category || cat === category;
+  const from = document.getElementById("date-from")?.value;
+  const to = document.getElementById("date-to")?.value;
 
-      let matchDate = true;
-      if (from && date) matchDate = date >= new Date(from);
-      if (to && date) matchDate = matchDate && date <= new Date(to);
+  const filtered = this.allItems.filter(item => {
 
-      return matchKeyword && matchCategory && matchDate;
-    });
+    const title = item.querySelector("title")?.textContent || "";
+    const desc = item.querySelector("description")?.textContent || "";
+    const cat = this.getCategory(item);
 
-    this.render(filtered);
-  }
+    const dateText = item.querySelector("pubDate")?.textContent;
+    const date = dateText ? new Date(dateText) : null;
+
+    const matchKeyword =
+      !keyword ||
+      title.toLowerCase().includes(keyword) ||
+      desc.toLowerCase().includes(keyword);
+
+    const matchCategory =
+      allChecked ||
+      checkedCategories.length === 0 ||
+      checkedCategories.includes(cat);
+
+    let matchDate = true;
+    if (from && date) matchDate = date >= new Date(from);
+    if (to && date) matchDate = matchDate && date <= new Date(to);
+
+    return matchKeyword && matchCategory && matchDate;
+  });
+
+  this.render(filtered);
+}
 
   // -------------------------
   formatDate(pubDateText) {
@@ -393,37 +412,71 @@ document.addEventListener("DOMContentLoaded", () => {
 
   M.AutoInit();
 
-  // =========================
-  // dropdown をモーダル外へ
-  // =========================
-  const dropdowns = document.querySelectorAll('.dropdown-trigger');
-  M.Dropdown.init(dropdowns, {
-    container: document.body,
-    coverTrigger: false
-  });
-
-  // =========================
-  // datepicker もモーダル外へ
-  // =========================
-  const dates = document.querySelectorAll('.datepicker');
-  M.Datepicker.init(dates, {
-    container: document.body,
-    autoClose: true
-  });
-
-  // =========================
-  // あなたの既存処理
-  // =========================
   const scanner = new RssScanner("news-container");
   const sidebar = new Sidebar(scanner);
   new FileManager(scanner, sidebar);
 
-  document.getElementById("search-apply")?.addEventListener("click", () => {
-    scanner.applyFilter();
+  document.getElementById("search-apply")
+    ?.addEventListener("click", () => scanner.applyFilter());
+
+  // =========================
+  // チェックボックス制御（ここに追加）
+  // =========================
+  document.addEventListener("change", (e) => {
+    const target = e.target;
+
+    // 「すべて」
+    if (target.id === "category-all") {
+      const checked = target.checked;
+
+      document.querySelectorAll(".category-item").forEach(cb => {
+        cb.checked = checked;
+      });
+
+      target.indeterminate = false;
+      updateIndeterminateState();
+      return;
+    }
+
+    // 個別
+    if (target.classList.contains("category-item")) {
+      updateIndeterminateState();
+    }
   });
 
+  // =========================
+  // THEME などその他の処理はそのまま
+  // =========================
 });
+const select = document.getElementById("theme-select");
 
+function applyTheme(mode){
+
+  if(mode === "dark"){
+    document.body.classList.add("dark-mode");
+  } else if(mode === "light"){
+    document.body.classList.remove("dark-mode");
+  } else {
+    const isDark =
+      window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+    document.body.classList.toggle("dark-mode", isDark);
+  }
+
+  localStorage.setItem("theme", mode);
+}
+
+// 初期化
+const saved = localStorage.getItem("theme") || "system";
+applyTheme(saved);
+
+if(select){
+  select.value = saved;
+
+  select.addEventListener("change", (e) => {
+    applyTheme(e.target.value);
+  });
+}
 
 // =========================
 // QR CODE
@@ -469,3 +522,27 @@ document.addEventListener("click", async (e) => {
     }
   }
 });
+function updateIndeterminateState() {
+  const all = document.getElementById("category-all");
+  const items = document.querySelectorAll(".category-item");
+  const checked = document.querySelectorAll(".category-item:checked");
+
+  if (!all || items.length === 0) return;
+
+  const total = items.length;
+  const checkedCount = checked.length;
+
+  if (checkedCount === 0) {
+    all.checked = false;
+    all.indeterminate = false;
+  } 
+  else if (checkedCount === total) {
+    all.checked = true;
+    all.indeterminate = false;
+  } 
+  else {
+    all.checked = false;
+    all.indeterminate = true;
+  }
+}
+// イベントリスナー
