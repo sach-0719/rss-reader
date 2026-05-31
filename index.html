@@ -112,11 +112,7 @@
 <script src="js/rss.js"></script>
 
 <!-- Materialize初期化（復元） -->
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  M.AutoInit();
-});
-</script>
+
 
 <!-- =========================
   検索モーダル
@@ -223,11 +219,36 @@ document.addEventListener('DOMContentLoaded', function () {
 document.addEventListener('DOMContentLoaded', function () {
   M.AutoInit();
 
+  const select = document.getElementById("theme-select");
+
+  function applyTheme(mode){
+    document.body.classList.remove("dark-mode");
+
+    if(mode === "dark"){
+      document.body.classList.add("dark-mode");
+    } else if(mode === "system"){
+      const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      if(isDark) document.body.classList.add("dark-mode");
+    }
+
+    localStorage.setItem("theme", mode);
+  }
+
+  const saved = localStorage.getItem("theme") || "system";
+  applyTheme(saved);
+
+  // ★ここが重要（Materialize対応）
   const selects = document.querySelectorAll('select');
   M.FormSelect.init(selects);
+
+  // ★Materialize対策：changeは委譲で取る
+  document.addEventListener("change", (e) => {
+    if (e.target.id === "theme-select") {
+      applyTheme(e.target.value);
+    }
+  });
 });
 </script>
-
 </div>
 </body>
 </html>
