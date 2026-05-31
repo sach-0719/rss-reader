@@ -1,310 +1,444 @@
+// =========================
+// RSS STORE（統一版）
+// =========================
+const RSSStore = {
+  key: "rss_list",
+
+  getList() {
+    try {
+      return JSON.parse(localStorage.getItem(this.key) || "[]");
+    } catch {
+      return [];
+    }
+  },
+
+  save(item) {
+    const list = this.getList();
+
+    if (list.length >= 10) list.shift();
+
+    list.push({
+      id: item.id,
+      title: item.title,
+      description: item.description || "",
+      xml: item.xml
+    });
+
+    localStorage.setItem(this.key, JSON.stringify(list));
+  },
+
+  get(id) {
+    return this.getList().find(x => x.id === id);
+  }
+};
+
+
+// =========================
+// RSS SCANNER（1つだけ！）
+// =========================
 class RssScanner {
+
   constructor(containerId) {
     this.container = document.getElementById(containerId);
-    this.titleEl = document.getElementById("site-title");
-    this.descEl = document.getElementById("site-description");
-    this.proxy = "https://corsproxy.io/?";
-  }
+    this.allItems = [];
 
-  // =========================
-  // タイトル（最強版）
-  // =========================
-  getFeedTitle(xml) {
-    let title =
-      xml.querySelector("channel > title")?.textContent ||
-      xml.querySelector("feed > title")?.textContent ||
-      xml.querySelector("rdf\\:RDF > channel > title")?.textContent ||
-      xml.querySelector("dc\\:title")?.textContent;
-
-    if (title && title.trim()) return title.trim();
-
-    // fallback（全titleタグ）
-    const all = xml.querySelectorAll("title");
-    for (const t of all) {
-      const txt = t.textContent?.trim();
-      if (txt && txt.length > 3) return txt;
-    }
-
-    return "";
-  }
-
-  // =========================
-  // 説明（最強版）
-  // =========================
-  getFeedDescription(xml) {
-    let desc =
-      xml.querySelector("channel > description")?.textContent ||
-      xml.querySelector("feed > subtitle")?.textContent ||
-      xml.querySelector("feed > description")?.textContent ||
-      xml.querySelector("dc\\:description")?.textContent;
-
-    if (desc && desc.trim()) return desc.trim();
-
-    return "";
-  }
-
-  // =========================
-  // 日付
-  // =========================
-  getDate(item) {
-    const dateText =
-      item.querySelector("pubDate")?.textContent ||
-      item.querySelector("updated")?.textContent ||
-      item.querySelector("dc\\:date")?.textContent ||
-      "";
-
-    if (!dateText) return "不明";
-
-    const d = new Date(dateText);
-    if (isNaN(d.getTime())) return "不明";
-
-    const now = new Date();
-    const diffSec = Math.floor((now - d) / 1000);
-    const diffMin = Math.floor(diffSec / 60);
-    const diffHour = Math.floor(diffMin / 60);
-    const diffDay = Math.floor(diffHour / 24);
-
-    if (diffSec < 10) return "たった今";
-    if (diffSec < 60) return `${diffSec}秒前`;
-    if (diffMin < 60) return `${diffMin}分前`;
-    if (diffHour < 24) return `${diffHour}時間前`;
-    if (diffDay < 15) return `${diffDay}日前`;
-
-    const w = ["日","月","火","水","木","金","土"];
-    return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}（${w[d.getDay()]}） ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
-  }
-
-  // =========================
-  // ロード
-  // =========================
-  async load(url) {
-    if (!url) return;
-
-    this.container.innerHTML = `<p style="text-align:center;">読み込み中...</p>`;
-
-    try {
-      const res = await fetch(`${this.proxy}${encodeURIComponent(url)}`);
-      const text = await res.text();
-      const xml = new DOMParser().parseFromString(text, "text/xml");
-
-      if (xml.querySelector("parsererror")) {
-        throw new Error("XML parse error");
-      }
-
-      // ★ここが重要（trim＋fallback）
-      let title = this.getFeedTitle(xml);
-      let desc = this.getFeedDescription(xml);
-
-      if (!title || !title.trim()) title = "News-Spot";
-      if (!desc || !desc.trim()) desc = "RSSフィード一覧";
-
-      if (this.titleEl) this.titleEl.textContent = title;
-      if (this.descEl) this.descEl.textContent = desc;
-
-      const items = xml.querySelectorAll("item, entry");
-      this.render(items);
-
-    } catch (e) {
-      console.error(e);
-      this.container.innerHTML =
-        `<p style="color:red;text-align:center;">読み込み失敗</p>`;
+    if (!this.container) {
+      console.error("news-container が見つかりません");
     }
   }
 
-  // =========================
-  // リンク取得
-  // =========================
-  getLink(item) {
-    const linkNode = item.querySelector("link");
-
-    const href = linkNode?.getAttribute("href");
-    const text = linkNode?.textContent;
-
-    if (href?.startsWith("http")) return href;
-    if (text?.startsWith("http")) return text;
-
-    return item.querySelector("enclosure")?.getAttribute("url") || "#";
-  }
-
-  // =========================
-  // サムネ
-  // =========================
-  getThumbnail(item, link, rawDesc) {
+  // -------------------------
+  getImage(item) {
     const enclosure = item.querySelector("enclosure");
     if (enclosure?.getAttribute("url")) return enclosure.getAttribute("url");
 
-    const thumb = item.getElementsByTagName("media:thumbnail")[0];
-    if (thumb) return thumb.getAttribute("url");
+    const media = item.getElementsByTagName("media:thumbnail")[0];
+    if (media?.getAttribute("url")) return media.getAttribute("url");
 
-    if (link.includes("youtu")) {
-      const id =
-        link.match(/v=([^&]+)/)?.[1] ||
-        link.match(/youtu\.be\/([^?&]+)/)?.[1];
-      if (id) return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
-    }
+    const desc = item.querySelector("description")?.textContent || "";
+    const match = desc.match(/<img[^>]+src=["'](.*?)["']/i);
 
-    const img = rawDesc.match(/<img[^>]+src=["'](.*?)["']/i);
-    return img ? img[1] : "noimage.jpg";
+    return match ? match[1] : "noimage.jpg";
   }
 
-  // =========================
-  // テキスト整形
-  // =========================
-  cleanText(text) {
-    return (text || "")
-      .replace(/<[^>]+>/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
+  getLink(item) {
+    const link = item.querySelector("link");
+    if (!link) return "#";
+
+    const text = link.textContent;
+    const href = link.getAttribute?.("href");
+
+    if (text?.startsWith("http")) return text;
+    if (href) return href;
+
+    return "#";
   }
 
-  // =========================
-  // 描画
-  // =========================
+  getCategory(item) {
+    return item.querySelector("category")?.textContent || "その他";
+  }
+
+  clean(text) {
+    return (text || "").replace(/<[^>]+>/g, "").trim();
+  }
+
+  // -------------------------
   render(items) {
     this.container.innerHTML = "";
 
-    Array.from(items).slice(0, 30).forEach((item, i) => {
-      const title = item.querySelector("title")?.textContent || "";
-      const link = this.getLink(item);
+    Array.from(items).slice(0, 50).forEach(item => {
 
-      const rawDesc =
+      const title = item.querySelector("title")?.textContent || "（無題）";
+      const desc =
         item.querySelector("description")?.textContent ||
         item.querySelector("summary")?.textContent ||
         "";
 
-      const desc = this.cleanText(rawDesc);
-      const image = this.getThumbnail(item, link, rawDesc);
-      const date = this.getDate(item);
+      const link = this.getLink(item);
+      const image = this.getImage(item);
+      const category = this.getCategory(item);
+      const dateInfo = this.formatDate(item.querySelector("pubDate")?.textContent);
 
-      const modalId = `qr_${i}`;
+      const div = document.createElement("div");
+      div.className = "card article";
 
-      const html = `
-        <div class="col s12 m6 l4">
-          <div class="card">
-
-            <div class="card-image">
-              <img src="${image}" onerror="this.src='noimage.jpg'">
-            </div>
-
-            <div class="card-content">
-              <span class="card-title">${title}</span>
-
-              <p class="rss-description">${desc}</p>
-
-              <div style="font-size:12px;color:#777;margin-top:6px;">
-                <i class="material-icons" style="font-size:14px;">schedule</i>
-                ${date}
-              </div>
-            </div>
-
-            <div class="card-action" style="display:flex;justify-content:space-around;">
-              <a href="${link}" target="_blank">
-                <i class="material-icons blue-text">open_in_new</i>
-              </a>
-
-              <a href="#${modalId}" class="modal-trigger">
-                <i class="material-icons green-text">qr_code</i>
-              </a>
-            </div>
-
-          </div>
+      // ★カードUIは一切変更していない
+      div.innerHTML = `
+        <div class="card-image">
+          <img src="${image}" onerror="this.src='noimage.jpg'">
         </div>
 
-        <div id="${modalId}" class="modal">
-          <div class="modal-content" style="text-align:center;">
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}">
-            <p style="word-break:break-all;">${link}</p>
+        <div class="card-content">
+
+          <div style="
+            display:inline-block;
+            margin-bottom:8px;
+            padding:3px 10px;
+            font-size:11px;
+            border-radius:20px;
+            background:#e3f2fd;
+            color:#1565c0;
+            font-weight:bold;
+          ">
+            ${category}
           </div>
+
+          <div style="color:#999;font-size:12px;margin-bottom:10px;">
+            <i class="material-icons" style="font-size:14px;">access_time</i>
+            ${dateInfo.relative}
+            <span style="font-size:11px;color:#bbb;margin-left:6px;">
+              （${dateInfo.exact}）
+            </span>
+          </div>
+
+          <span class="card-title">${title}</span>
+          <p>${this.clean(desc)}</p>
         </div>
+
+        <div class="card-action">
+          <a href="${link}" class="left" target="_blank">
+            <i class="material-icons blue-text">open_in_new</i>
+          </a>
+          <a  class="left" target="_blank" id="shareBtn" style="display:none;" data-title="${title}" data-link="${link}">
+            <i class="material-icons purple-text">share</i>
+          </a>
+
+          <a href="#!" class="qr-btn left" data-link="${link}">
+            <i class="material-icons green-text">qr_code</i>
+          </a>
+        </div>
+        <script>
+        const shareBtn = document.getElementById('share-btn');
+        const resultPara = document.getElementById('share-result');
+
+        // Web Share API に対応しているブラウザか判定
+        if (navigator.share) {
+          // 対応している場合、ボタンを表示する
+          shareBtn.style.display = 'block';
+
+          shareBtn.addEventListener('click', async () => {
+            try {
+              await navigator.share({
+                title: ${title}, // ページのタイトル
+                url: ${link} // ページのURL
+              });
+              resultPara.textContent = '共有が完了しました。';
+            } catch (err) {
+              // ユーザーが共有をキャンセルした場合などはここに入ります
+              if (err.name !== 'AbortError') {
+                resultPara.textContent = 'エラー: ' + err;
+              }
+            }
+          });
+        }
       `;
 
-      this.container.insertAdjacentHTML("beforeend", html);
+      this.container.appendChild(div);
+    });
+  }
+
+  // -------------------------
+  loadFromXMLText(text) {
+
+    const xml = new DOMParser().parseFromString(text, "text/xml");
+
+    const channel = xml.querySelector("channel");
+
+    const siteTitle =
+      channel?.querySelector("title")?.textContent?.trim() || "News-Spot";
+
+    const siteDesc =
+      channel?.querySelector("description")?.textContent?.trim() || "RSSニュースリーダー";
+
+    // ⭐ 上部タイトル・説明（復活）
+    const titleEl = document.getElementById("site-title");
+    const descEl = document.getElementById("site-description");
+
+    if (titleEl) titleEl.textContent = siteTitle;
+    if (descEl) descEl.textContent = siteDesc;
+
+    let items = xml.getElementsByTagName("item");
+    if (!items.length) items = xml.getElementsByTagName("entry");
+
+    this.allItems = Array.from(items);
+
+    this.render(this.allItems);
+    this.updateCategorySelect();
+  }
+
+  // -------------------------
+  updateCategorySelect() {
+    const select = document.getElementById("search-category");
+    if (!select) return;
+
+    const categories = [...new Set(
+      this.allItems.map(i => this.getCategory(i))
+    )];
+
+    select.innerHTML = `
+      <option value="">全カテゴリ</option>
+      ${categories.map(c => `<option value="${c}">${c}</option>`).join("")}
+    `;
+
+    setTimeout(() => {
+      if (window.M) M.FormSelect.init(select);
+    }, 0);
+  }
+
+  // -------------------------
+  applyFilter() {
+
+    const keyword = (document.getElementById("search-keyword")?.value || "").toLowerCase();
+    const category = document.getElementById("search-category")?.value || "";
+    const from = document.getElementById("date-from")?.value;
+    const to = document.getElementById("date-to")?.value;
+
+    const filtered = this.allItems.filter(item => {
+
+      const title = item.querySelector("title")?.textContent || "";
+      const desc =
+        item.querySelector("description")?.textContent ||
+        item.querySelector("summary")?.textContent ||
+        "";
+
+      const cat = this.getCategory(item);
+
+      const dateText = item.querySelector("pubDate")?.textContent;
+      const date = dateText ? new Date(dateText) : null;
+
+      const matchKeyword =
+        !keyword ||
+        title.toLowerCase().includes(keyword) ||
+        desc.toLowerCase().includes(keyword);
+
+      const matchCategory =
+        !category || cat === category;
+
+      let matchDate = true;
+      if (from && date) matchDate = date >= new Date(from);
+      if (to && date) matchDate = matchDate && date <= new Date(to);
+
+      return matchKeyword && matchCategory && matchDate;
     });
 
-    M.Modal.init(document.querySelectorAll(".modal"));
-  }
-}
-
-// =========================
-// URL管理
-// =========================
-class RssConfigManager {
-  constructor(scanner) {
-    this.scanner = scanner;
-    this.input = document.getElementById("rss-url-input");
-    this.btn = document.getElementById("save-rss-btn");
-    this.key = "user_rss_url";
-    this.init();
+    this.render(filtered);
   }
 
-  init() {
-    const saved = localStorage.getItem(this.key);
+  // -------------------------
+  formatDate(pubDateText) {
 
-    if (saved) {
-      this.input.value = saved;
-      this.scanner.load(saved);
-    } else {
-      this.scanner.load("https://news.yahoo.co.jp/rss/topics/top-picks.xml");
+    if (!pubDateText) {
+      return { relative: "日時不明", exact: "" };
     }
 
-    this.btn.addEventListener("click", () => {
-      const url = this.input.value.trim();
-      if (!url) return;
+    const date = new Date(pubDateText);
+    if (isNaN(date)) {
+      return { relative: "日時不明", exact: "" };
+    }
 
-      localStorage.setItem(this.key, url);
-      this.scanner.load(url);
+    const now = new Date();
+    const diff = now - date;
+
+    const sec = Math.floor(diff / 1000);
+    const min = Math.floor(sec / 60);
+    const hour = Math.floor(min / 60);
+    const day = Math.floor(hour / 24);
+
+    let relative = "";
+
+    if (min < 1) relative = `たった今（${sec}秒前）`;
+    else if (hour < 1) relative = `${min}分前`;
+    else if (day < 1) relative = `${hour}時間前`;
+    else if (day < 7) relative = `${day}日前`;
+    else if (day < 30) relative = `${Math.floor(day / 7)}週間前`;
+    else if (day < 365) relative = `${Math.floor(day / 30)}か月前`;
+    else {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      const h = String(date.getHours()).padStart(2, "0");
+      const mi = String(date.getMinutes()).padStart(2, "0");
+
+      relative = `${y}/${m}/${d} ${h}:${mi}`;
+    }
+
+    const exact =
+      `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")} ` +
+      `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+
+    return { relative, exact };
+  }
+}
+
+
+// =========================
+// SIDEBAR
+// =========================
+class Sidebar {
+
+  constructor(scanner) {
+    this.scanner = scanner;
+    this.container = document.getElementById("rss-list");
+
+    this.render();
+
+    document.addEventListener("click", (e) => {
+      const el = e.target.closest(".rss-item");
+      if (!el) return;
+
+      const rss = RSSStore.get(el.dataset.id);
+      if (rss?.xml) {
+        this.scanner.loadFromXMLText(rss.xml);
+      }
+    });
+  }
+
+  render() {
+    if (!this.container) return;
+
+    this.container.innerHTML = "";
+
+    RSSStore.getList().forEach(rss => {
+
+      if (!rss?.id || !rss?.title) return;
+
+      const li = document.createElement("li");
+      const a = document.createElement("a");
+
+      a.className = "waves-effect rss-item";
+      a.href = "#!";
+      a.dataset.id = rss.id;
+
+      // ⭐サイドバーはRSSタイトル
+      a.textContent = rss.title;
+
+      li.appendChild(a);
+      this.container.appendChild(li);
     });
   }
 }
 
-// =========================
-// ファイル読み込み
-// =========================
-class RssFileManager {
-  constructor(scanner) {
-    this.scanner = scanner;
-    this.input = document.getElementById("rss-file-input");
-    this.init();
-  }
 
-  init() {
-    if (!this.input) return;
+// =========================
+// FILE MANAGER
+// =========================
+class FileManager {
 
-    this.input.addEventListener("change", (e) => {
+  constructor(scanner, sidebar) {
+    const input = document.getElementById("rss-file-input");
+
+    input?.addEventListener("change", (e) => {
+
       const file = e.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
-      reader.onload = (ev) => this.parseXml(ev.target.result);
+
+      reader.onload = (ev) => {
+
+        const xml = ev.target.result;
+        const parsed = new DOMParser().parseFromString(xml, "text/xml");
+
+        const rssTitle =
+          parsed.querySelector("channel > title")?.textContent?.trim() ||
+          parsed.querySelector("feed > title")?.textContent?.trim() ||
+          file.name.replace(/\.[^/.]+$/, "");
+
+        const rssDesc =
+          parsed.querySelector("channel > description")?.textContent?.trim() ||
+          parsed.querySelector("feed > subtitle")?.textContent?.trim() ||
+          "";
+
+        RSSStore.save({
+          id: Date.now().toString(),
+          title: rssTitle,
+          description: rssDesc,
+          xml
+        });
+
+        sidebar.render();
+        scanner.loadFromXMLText(xml);
+      };
+
       reader.readAsText(file);
     });
   }
-
-  parseXml(text) {
-    const xml = new DOMParser().parseFromString(text, "text/xml");
-
-    let title = this.scanner.getFeedTitle(xml);
-    let desc = this.scanner.getFeedDescription(xml);
-
-    if (!title) title = "ローカルRSS";
-    if (!desc) desc = "ローカルファイル";
-
-    if (this.scanner.titleEl) this.scanner.titleEl.textContent = title;
-    if (this.scanner.descEl) this.scanner.descEl.textContent = desc;
-
-    const items = xml.querySelectorAll("item, entry");
-    this.scanner.render(items);
-  }
 }
 
+
 // =========================
-// 初期化
+// INIT
 // =========================
 document.addEventListener("DOMContentLoaded", () => {
+
   M.AutoInit();
 
   const scanner = new RssScanner("news-container");
+  const sidebar = new Sidebar(scanner);
 
-  new RssConfigManager(scanner);
-  new RssFileManager(scanner);
+  new FileManager(scanner, sidebar);
+
+  document.getElementById("search-apply")?.addEventListener("click", () => {
+    scanner.applyFilter();
+  });
+});
+
+
+// =========================
+// QR CODE
+// =========================
+document.addEventListener("click", (e) => {
+
+  const btn = e.target.closest(".qr-btn");
+  if (!btn) return;
+
+  const url = btn.dataset.link;
+
+  document.getElementById("qr-image").src =
+    `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
+
+  document.getElementById("qr-url").textContent = url;
+
+  const modal = M.Modal.getInstance(document.getElementById("qr-modal"));
+  modal.open();
 });

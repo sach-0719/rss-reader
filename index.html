@@ -3,71 +3,167 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>News-spot</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c&display=swap" rel="stylesheet">
-  <!-- CSS読み込み -->
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" crossorigin="anonymous">
+  <title>News-Spot</title>
+
+  <!-- Font -->
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c&display=swap" rel="stylesheet">
+
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+  <!-- Materialize -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
-  <link rel="stylesheet" href="css/materialize.css">
+
+  <!-- 自作CSS -->
   <link rel="stylesheet" href="css/rss.css">
 </head>
+
 <body>
 
-  <!-- ナビゲーションバー -->
-  <nav class="grey accent-4" role="navigation">
-    <div class="nav-wrapper container">
-      
-      <!-- サイドバー呼び出しボタン -->
-      <a href="#" data-target="nav-mobile" class="sidenav-trigger show-on-large"><i class="material-icons">menu</i></a>
-    </div>
-  </nav>
+<!-- =========================
+  ナビ
+========================= -->
+<nav class="grey darken-3">
+  <div class="nav-wrapper container">
+    <a href="#" data-target="nav-mobile" class="sidenav-trigger show-on-large">
+      <i class="material-icons">menu</i>
+    </a>
+  </div>
+</nav>
 
+<!-- =========================
+  サイドバー（復元）
+========================= -->
 <ul id="nav-mobile" class="sidenav">
-  <!-- タイトル部分 -->
-<h1 class="header center black-text" id="site-title">News-Spot</h1>
-<h5 class="center header s12 light black-text" id="site-description">
-  初めてのご利用ありがとうございます！
-</h5>
-  <!-- 設定エリア -->
-  <li style="padding: 0 10px;">
-    <p style="font-size: 0.8rem; color: #666;">取得したいURLを入力してください。<br>RSS 2.0とYouTube RSSのURLに対応しています。</p>
-    <div class="input-field" style="margin: 10px 0;">
-      <input placeholder="https://..." id="rss-url-input" type="text">
-    </div>
-      <div class="file-field input-field">
-    <div class="btn green">
-      <span><i class="material-icons">upload</i></span>
-      <input type="file" id="rss-file-input" accept=".xml,.rss,.rdf">
-    </div>
+  <li>
+    <h5 style="padding:10px;">RSS一覧</h5>
+  </li>
 
-    <div class="file-path-wrapper">
-      <input class="file-path validate" type="text" placeholder="RSSファイルを選択">
-    </div>
-  </div>
-    <button id="save-rss-btn" class="btn green" style="width: 100%; height: 36px; line-height: 36px;">
-      <i class="material-icons left">save</i>更新</button>
-          </li>
-    <li><a href="" class="waves-effect" href="#!">このサイトについて</a></li>
+  <li style="padding:10px;">
+    <input id="rss-file-input" type="file" accept=".xml,.rss">
+  </li>
+
+  <li>
+    <div id="rss-list"></div>
+  </li>
+  <li>
+    <a href="info.html" class="waves-effect">
+      <i class="material-icons">help</i>このサイトについて
+    </a>
 </ul>
-<h1 class="header center black-text">News-Spot</h1>
-  <!-- ニュース表示エリア -->
-  <div class="container">
-    <div id="news-container"  style="margin-top: 20px;">
-      <div class="center-align">
-        <p>メニュー <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">menu</i> からRSS URLを設定してください。</p>
+
+<!-- =========================
+  タイトル
+========================= -->
+<h2 class="center" id="site-title">News-Spot</h2 >
+<h5 class="center light" id="site-description">RSSニュースリーダー</h5>
+<!-- 検索ボタン -->
+<div class="center" style="margin:20px 0;">
+  <a class="btn modal-trigger black" href="#search-modal">
+    <i class="material-icons left">search</i>
+    詳細検索
+  </a>
+</div>
+
+<!-- =========================
+  コンテンツ（復元）
+========================= -->
+<div class="container">
+
+  <!-- フィーチャー枠（残す） -->
+   <noscript>
+      <div class="card yellow lighten-4">
+          <div class="card-content">
+
+
+
+            <span class="card-title">JavaScriptが無効になっています</span>
+            <p>このサイトはJavascriptを必要とします。JavaScriptを有効にしてください。</p>
+          </div>
       </div>
+        </noscript>
+  <div id="featured-container"></div>
+
+  <!-- 記事一覧 -->
+  <div id="news-container"></div>
+
+</div>
+
+
+
+<!-- =========================
+  JS
+========================= -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+<script src="js/rss.js"></script>
+
+<!-- Materialize初期化（復元） -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  M.AutoInit();
+});
+</script>
+
+<!-- =========================
+  検索モーダル
+========================= -->
+<div id="search-modal" class="modal">
+
+  <div class="modal-content">
+
+    <h5>詳細検索</h5>
+
+    <div class="input-field">
+      <input id="search-keyword" type="text">
+      <label for="search-keyword">キーワード</label>
     </div>
+
+    <div class="input-field">
+      <select id="search-category">
+        <option value="">全カテゴリ</option>
+      </select>
+      <label>カテゴリ</label>
+    </div>
+
+    <div class="input-field">
+      <input id="date-from" class="datepicker" type="text">
+      <label for="date-from">開始日</label>
+    </div>
+
+    <div class="input-field">
+      <input id="date-to" class="datepicker" type="text">
+      <label for="date-to">終了日</label>
+    </div>
+
   </div>
 
-<!-- Scripts -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-  
-  <!-- 自作のJSファイルを読み込む（これ一行にする） -->
-  <script src="js/rss.js"></script>
-</body>
-  
+  <div class="modal-footer">
+    <a class="modal-close btn-flat"><i class="material-icons">close</i></a>
+    <a id="search-apply" class="btn blue modal-close"><i class="material-icons left">search</i> 検索実行</a>
+  </div>
+
+</div>
+
+<!-- =========================
+  QRモーダル
+========================= -->
+<div id="qr-modal" class="modal">
+
+  <div class="modal-content center">
+
+    <h5>QRコード</h5>
+
+    <img id="qr-image" style="max-width:250px;">
+
+    <p id="qr-url"></p>
+
+  </div>
+
+  <div class="modal-footer">
+    <a class="modal-close btn-flat"><i class="material-icons">close</i></a>
+  </div>
+
+</div>
+</div>
 </body>
 </html>
