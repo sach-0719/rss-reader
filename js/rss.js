@@ -393,14 +393,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
   M.AutoInit();
 
+  // =========================
+  // dropdown をモーダル外へ
+  // =========================
+  const dropdowns = document.querySelectorAll('.dropdown-trigger');
+  M.Dropdown.init(dropdowns, {
+    container: document.body,
+    coverTrigger: false
+  });
+
+  // =========================
+  // datepicker もモーダル外へ
+  // =========================
+  const dates = document.querySelectorAll('.datepicker');
+  M.Datepicker.init(dates, {
+    container: document.body,
+    autoClose: true
+  });
+
+  // =========================
+  // あなたの既存処理
+  // =========================
   const scanner = new RssScanner("news-container");
   const sidebar = new Sidebar(scanner);
-
   new FileManager(scanner, sidebar);
 
   document.getElementById("search-apply")?.addEventListener("click", () => {
     scanner.applyFilter();
   });
+
 });
 
 

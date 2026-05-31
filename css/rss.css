@@ -1,3 +1,24 @@
+/* モーダル本体 */
+.modal {
+  overflow: visible !important;
+}
+
+/* 中身も解除 */
+.modal .modal-content {
+  overflow: visible !important;
+}
+
+/* Materializeのスクロール制御を殺す */
+.modal-overlay {
+  overflow: visible !important;
+}
+
+/* dropdown / datepicker を最前面へ */
+.dropdown-content,
+.datepicker-modal,
+.timepicker-modal {
+  z-index: 9999 !important;
+}
 /* =========================
    ベース
 ========================= */
