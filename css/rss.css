@@ -446,3 +446,26 @@ input[type="text"] {
 .white-text {
   color: #FFFFFF !important;
 }
+#rss-tabs {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+
+  width: max-content;
+  min-width: 0;
+
+  margin: 0;
+  white-space: nowrap;
+
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+#rss-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+#rss-tabs .rss-tab {
+  flex: 0 0 auto;
+}
