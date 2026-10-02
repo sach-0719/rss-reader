@@ -1,254 +1,216 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>News-Spot</title>
-
+  
+  <!-- 1. 独自カレンダー用CSS -->
+  <link rel="stylesheet" href="css/calendar.css">
+  
   <!-- Font -->
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c&display=swap" rel="stylesheet">
 
   <!-- Material Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
-  <!-- Materialize -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+  <!-- 4. ダウンロードしたローカルのTailwind CSSを読み込む -->
+  <link rel="stylesheet" href="css/tailwind.min.css">
 
-  <!-- 自作CSS -->
+  <!-- 5. 自作CSS -->
   <link rel="stylesheet" href="css/rss.css">
 </head>
 
-<body>
+<body class="bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100 min-h-screen font-sans transition-colors duration-200">
 
 <!-- =========================
-  ナビ
+  ナビゲーション
 ========================= -->
-<nav class="grey darken-3">
-  <div class="nav-wrapper container">
-    <a href="#" data-target="nav-mobile" class="sidenav-trigger show-on-large">
-      <i class="material-icons">menu</i>
-    </a>
+<nav class="bg-gray-800 text-white shadow-md">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16">
+      <div class="flex items-center">
+        <!-- サイドバーを開くボタン -->
+        <button id="menu-trigger" class="text-gray-300 hover:text-white p-2 rounded-md focus:outline-none">
+          <i class="material-icons white-text">menu</i>
+        </button>
+        <span class="ml-4 text-xl font-bold tracking-wider text-blue-400">News-Spot</span>
+      </div>
+    </div>
   </div>
 </nav>
 
 <!-- =========================
-  サイドバー（復元）
+  サイドバー（Tailwindで自作制御）
 ========================= -->
-<ul id="nav-mobile" class="sidenav">
-  <li>
-    <h5 style="padding:10px;">メニュー</h5>
-  </li>
+<div id="nav-mobile-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden transition-opacity"></div>
+<aside id="nav-mobile" class="fixed top-0 left-0 h-full w-64 bg-white dark:bg-gray-800 shadow-2xl z-50 transform -translate-x-full transition-transform duration-300 ease-in-out overflow-y-auto">
+  <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+    <h5 class="text-lg font-bold">メニュー</h5>
+    <button id="menu-close" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"><i class="material-icons">close</i></button>
+  </div>
 
-  <li style="padding:10px;">
-    <input id="rss-file-input" type="file" accept=".xml,.rss">
-  </li>
-
-  <li>
-    <div id="rss-list"></div>
-  </li>
-  <li>
-    <a href="info.html" class="waves-effect">
-      <i class="material-icons ">help</i>このサイトについて
-    </a>
-  </li>
-<li>
-    <div class="input-field">
-      <select id="theme-select">
-        <option value="light">ライトテーマ</option>
-        <option value="dark">ダークテーマ</option>
-        <option value="system">システム</option>
-      </select>
-      <label>テーマ切替</label>
+  <div class="p-4">
+    <!-- ファイル入力 -->
+    <div class="mb-4">
+      <input id="rss-file-input" type="file" accept=".xml,.rss" class="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
     </div>
-  </li>
+
+    <!-- RSSリスト -->
+    <div id="rss-list" class="space-y-1 mb-6"></div>
+
+    <!-- リンク類 -->
+    <ul class="space-y-2">
+      <li>
+        <a href="info.html" class="flex items-center p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+          <i class="material-icons mr-3 text-gray-500">help</i>このサイトについて
+        </a>
+      </li>
+      <li>
+        <!-- テーマ切替セレクター -->
+        <div class="relative mt-4">
+          <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">テーマ切替</label>
+          <select id="theme-select" class="block w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-sm focus:ring-blue-500 focus:border-blue-500">
+            <option value="light">ライトテーマ</option>
+            <option value="dark">ダークテーマ</option>
+            <option value="system">システム</option>
+          </select>
+        </div>
+      </li>
+    </ul>
+  </div>
+</aside>
+
+<!-- =========================
+  タイトル ＆ 詳細検索ボタン
+========================= -->
+<header class="max-w-4xl mx-auto text-center mt-12 px-4">
+  <h2 class="text-4xl font-extrabold mb-2 tracking-tight text-blue-500" id="site-title">News-Spot</h2>
+  <h5 class="text-lg font-light text-gray-500 dark:text-gray-400 mb-6" id="site-description">RSSニュースリーダー</h5>
   
-
-  </li>
-</ul>
-
-<!-- =========================
-  タイトル
-========================= -->
-<h2 class="center" id="site-title">News-Spot</h2 >
-<h5 class="center light" id="site-description">RSSニュースリーダー</h5>
-<!-- 検索ボタン -->
-<div class="center" style="margin:20px 0;">
-  <a class="btn modal-trigger black" href="#search-modal">
-    <i class="material-icons left">search</i>
+  <!-- 検索モーダル起動ボタン -->
+  <button id="search-modal-trigger" class="inline-flex items-center px-6 py-3 bg-gray-900 hover:bg-black text-white dark:bg-gray-800 dark:hover:bg-gray-700 font-medium rounded-lg shadow transition">
+    <i class="material-icons mr-2">search</i>
     詳細検索
-  </a>
-</div>
+  </button>
+</header>
 
 <!-- =========================
-  コンテンツ（復元）
+  メインコンテンツ領域
 ========================= -->
-<div class="container">
+<main class="max-w-4xl mx-auto px-4 py-8">
+  <noscript>
+    <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded shadow mb-6">
+      <p class="font-bold">JavaScriptが無効になっています</p>
+      <p>このサイトはJavascriptを必要とします。JavaScriptを有効にしてください。</p>
+    </div>
+  </noscript>
+  
+  <div id="featured-container" class="mb-8"></div>
+  <div id="news-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+</main>
 
-  <!-- フィーチャー枠（残す） -->
-   <noscript>
-      <div class="card yellow lighten-4">
-          <div class="card-content">
+<!-- =========================
+  【Tailwind版】詳細検索モーダル
+========================= -->
+<div id="search-modal" class="fixed inset-0 bg-black bg-opacity-60 z-40 hidden items-center justify-center p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full shadow-2xl overflow-hidden transform transition-all">
+    <div class="p-6">
+      <h5 class="text-xl font-bold mb-4">詳細検索</h5>
 
-
-
-            <span class="card-title">JavaScriptが無効になっています</span>
-            <p>このサイトはJavascriptを必要とします。JavaScriptを有効にしてください。</p>
-          </div>
+      <div class="mb-4">
+        <label for="search-keyword" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">キーワード</label>
+        <input id="search-keyword" type="text" class="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 outline-none">
       </div>
-        </noscript>
-  <div id="featured-container"></div>
 
-  <!-- 記事一覧 -->
-  <div id="news-container"></div>
+      <div id="category-checklist" class="mb-4 space-y-2"></div>
 
+      <div class="mb-4">
+        <label for="date-from" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">開始日</label>
+        <input id="date-from" type="text" placeholder="日付を選択" readonly class="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded cursor-pointer outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+
+      <div class="mb-6">
+        <label for="date-to" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">終了日</label>
+        <input id="date-to" type="text" placeholder="日付を選択" readonly class="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded cursor-pointer outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+    </div>
+
+    <div class="bg-gray-50 dark:bg-gray-700 px-6 py-4 flex justify-end space-x-3">
+      <button id="search-modal-close" class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded font-medium transition">
+        キャンセル
+      </button>
+      <button id="search-apply" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded shadow transition">
+        <i class="material-icons mr-2 text-sm white-text">search</i>検索実行
+      </button>
+    </div>
+  </div>
 </div>
 
-
+<!-- =========================
+  【完全独立】独自設計カレンダー
+========================= -->
+<div class="custom-datepicker-overlay" id="datepicker-overlay">
+  <div class="custom-datepicker-modal">
+    <div class="datepicker-side-display">
+      <div class="display-year" id="display-year"></div>
+      <div class="display-date" id="display-date"></div>
+    </div>
+    <div class="datepicker-main-container">
+      <div class="datepicker-header">
+        <button class="nav-btn" id="prev-btn">&lt;</button>
+        <div class="current-month-year" id="current-month-year"></div>
+        <button class="nav-btn" id="next-btn">&gt;</button>
+      </div>
+      <div class="datepicker-grid" id="datepicker-grid"></div>
+      <div class="datepicker-actions">
+        <button class="action-btn" id="cancel-btn">キャンセル</button>
+        <button class="action-btn" id="ok-btn">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- =========================
-  JS
+  【Tailwind版】QRモーダル（千切れていた部分を完全に修復）
 ========================= -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+<div id="qr-modal" class="fixed inset-0 bg-black bg-opacity-60 z-40 hidden items-center justify-center p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full shadow-2xl overflow-hidden p-6 relative">
+    <button id="qr-modal-close" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+      <i class="material-icons">close</i>
+    </button>
+    
+    <h5 class="text-xl font-bold text-center mb-4">QRコード</h5>
+
+    <div id="qr-loading" class="text-center py-4">
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">QRコード生成中...</p>
+      <div class="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
+        <div class="bg-blue-600 h-1.5 rounded-full animate-pulse w-1/2 mx-auto"></div>
+      </div>
+    </div>
+
+    <div class="text-center space-y-3">
+      <img id="qr-image" class="mx-auto rounded shadow-md max-w-full h-auto" alt="QR Code" style="display:none; width:250px;">
+      
+      <div class="flex flex-col space-y-2 pt-2">
+        <button class="w-full py-2 bg-gray-900 hover:bg-black text-white dark:bg-gray-700 dark:hover:bg-gray-600 rounded flex items-center justify-center font-medium transition" id="qr-download-btn">
+          <i class="material-icons mr-2">download</i>QRコードをダウンロード
+        </button>
+        <button class="w-full py-2 bg-gray-900 hover:bg-black text-white dark:bg-gray-700 dark:hover:bg-gray-600 rounded flex items-center justify-center font-medium transition" id="qr-share-btn">
+          <i class="material-icons mr-2">share</i>QRコードを共有
+        </button>
+        <button class="w-full py-2 bg-gray-900 hover:bg-black text-white dark:bg-gray-700 dark:hover:bg-gray-600 rounded flex items-center justify-center font-medium transition" id="link-copy-btn">
+          <i class="material-icons mr-2">content_copy</i>リンクをコピー
+        </button>
+      </div>
+      <p id="qr-url" class="text-xs text-gray-500 dark:text-gray-400 break-all pt-2"></p>
+    </div>
+  </div>
+</div>
+
+<!-- バックエンドスクリプトの読み込み -->
 <script src="js/rss.js"></script>
-
-<!-- Materialize初期化（復元） -->
-
-
-<!-- =========================
-  検索モーダル
-========================= -->
-<div id="search-modal" class="modal">
-
-  <div class="modal-content">
-
-    <h5>詳細検索</h5>
-
-    <div class="input-field">
-      <input id="search-keyword" type="text">
-      <label for="search-keyword">キーワード</label>
-    </div>
-
-    <div id="category-checklist"></div>
-
-    <div class="input-field">
-      <input id="date-from" class="datepicker" type="text">
-      <label for="date-from">開始日</label>
-    </div>
-
-    <div class="input-field">
-      <input id="date-to" class="datepicker" type="text">
-      <label for="date-to">終了日</label>
-    </div>
-
-  </div>
-
-  <div class="modal-footer">
-    <a class="modal-close btn-flat"><i class="material-icons">close</i></a>
-    <a id="search-apply" class="btn blue modal-close"><i class="material-icons left">search</i> 検索実行</a>
-  </div>
-
-</div>
-
-<!-- =========================
-  QRモーダル
-========================= -->
-
-<div id="qr-modal" class="modal">
-
-  <div class="modal-content">
-
-
-<h5 class="center">QRコード</h5>
-
-<!-- ローディング表示 -->
-<div id="qr-loading" class="center">
-
-  <p style="margin:0;font-size:0.9rem;color:#777;">
-    QRコード生成中...
-  </p>
-
-  <div class="progress" style="max-width:250px;margin:15px auto;">
-    <div class="indeterminate"></div>
-  </div>
-
-</div>
-
-<!-- QRコード表示エリア -->
-<div style="text-align:center;">
-
-  <img
-    id="qr-image"
-    class="responsive-img"
-    alt="QR Code"
-    style="
-      display:none;
-      width:250px;
-      max-width:100%;
-      margin:20px auto;
-    "
-  >
-
-  <p
-    id="qr-url"
-    class="grey-text text-darken-1"
-    style="
-      word-break:break-all;
-      margin-top:15px;
-    "
-  ></p>
-
-</div>
-
-
-  </div>
-
-  <div class="modal-footer">
-
-
-<a href="#!" class="modal-close btn-flat">
-  <i class="material-icons">close</i>
-</a>
-
-
-  </div>
-
-</div>
-
 <script src="js/qrload.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  M.AutoInit();
-
-  const select = document.getElementById("theme-select");
-
-  function applyTheme(mode){
-    document.body.classList.remove("dark-mode");
-
-    if(mode === "dark"){
-      document.body.classList.add("dark-mode");
-    } else if(mode === "system"){
-      const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      if(isDark) document.body.classList.add("dark-mode");
-    }
-
-    localStorage.setItem("theme", mode);
-  }
-
-  const saved = localStorage.getItem("theme") || "system";
-  applyTheme(saved);
-
-  // ★ここが重要（Materialize対応）
-  const selects = document.querySelectorAll('select');
-  M.FormSelect.init(selects);
-
-  // ★Materialize対策：changeは委譲で取る
-  document.addEventListener("change", (e) => {
-    if (e.target.id === "theme-select") {
-      applyTheme(e.target.value);
-    }
-  });
-});
-</script>
-</div>
-</body>
-</html>
+<script src="js/calendar.js"></script>
+<script src="testjs.js"></script>
+<script src="js/rsstw.js"></script>

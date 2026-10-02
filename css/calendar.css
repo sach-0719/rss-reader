@@ -1,0 +1,212 @@
+/* ==================================================
+   1. カラー変数と共通設定（既存のダークテーマに対応可能）
+   ================================================== */
+:root {
+  --card: #1e1e1e;       /* ダイアログの背景 */
+  --text: #ffffff;       /* 通常の文字色 */
+  --text-muted: #777777; /* 薄い文字色（前月・翌月など） */
+  --primary: #2196F3;    /* テーマカラー（青） */
+  --bg: #121212;
+}
+
+body {
+  background-color: var(--bg);
+  font-family: sans-serif;
+  margin: 0;
+  padding: 20px;
+}
+
+/* 呼び出し元の入力欄と当たり判定（横幅100%） */
+.input-field {
+  max-width: 300px;
+  margin-bottom: 20px;
+}
+
+.input-field label {
+  color: var(--text);
+  display: block;
+  margin-bottom: 8px;
+}
+
+.input-field input {
+  width: 100%;
+  padding: 10px;
+  background: var(--card);
+  border: 1px solid #444;
+  color: var(--text);
+  border-radius: 4px;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+/* ==================================================
+   2. カレンダー・ダイアログの構造（絶対に崩れない設計）
+   ================================================== */
+/* 背景のマスクレイヤー */
+.custom-datepicker-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 999;
+  display: none; /* 初期は非表示（JSでflexに変更） */
+  align-items: center;
+  justify-content: center;
+}
+
+/* ダイアログ本体（PCでは横並び） */
+.custom-datepicker-modal {
+  background: var(--card);
+  color: var(--text);
+  display: flex;
+  flex-direction: row; /* PCは横並び */
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+  width: 650px;
+  max-width: 95vw;
+}
+
+/* 【左側】青い日付表示エリア */
+.datepicker-side-display {
+  background-color: var(--primary);
+  color: #fff;
+  padding: 30px;
+  width: 160px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.display-year {
+  font-size: 1rem;
+  opacity: 0.8;
+}
+
+.display-date {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-top: 10px;
+  line-height: 1.2;
+}
+
+/* 【右側】カレンダー計算エリア */
+.datepicker-main-container {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* カレンダーヘッダー（年月切り替え） */
+.datepicker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.current-month-year {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.nav-btn {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 5px 10px;
+}
+
+/* CSS Gridによる完璧な7列グリッド */
+.datepicker-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  gap: 5px 0;
+}
+
+/* 曜日ヘッダー（S M T W T F S） */
+.week-day {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: bold;
+  padding-bottom: 10px;
+}
+
+/* 日付ボタン（マスいっぱいの当たり判定） */
+.day-cell {
+  background: none;
+  border: none;
+  color: var(--text);
+  height: 40px;
+  width: 100%;
+  line-height: 40px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 0;
+  box-sizing: border-box;
+  display: block;
+}
+
+.day-cell:hover:not(.empty-cell) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* 当月以外の薄い日付 */
+.day-cell.other-month {
+  color: var(--text-muted);
+}
+
+/* 選択された日付のスタイル */
+.day-cell.is-selected {
+  background-color: var(--primary) !important;
+  color: #fff !important;
+  font-weight: bold;
+}
+
+/* フッターボタンエリア */
+.datepicker-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-weight: bold;
+  cursor: pointer;
+  padding: 10px;
+  font-size: 0.9rem;
+}
+
+/* ==================================================
+   3. 【最重要】スマホ画面（小画面）でのレスポンシブ
+   ================================================== */
+@media only screen and (max-width: 600px) {
+  .custom-datepicker-modal {
+    flex-direction: column; /* 縦並びに強制変更 */
+    width: 100%;
+  }
+
+  .datepicker-side-display {
+    width: auto;
+    padding: 15px 20px;
+    flex-direction: row; /* 上部で横並びにコンパクト化 */
+    justify-content: space-around;
+    align-items: center;
+  }
+
+  .display-date {
+    margin-top: 0;
+    font-size: 1.4rem;
+  }
+}

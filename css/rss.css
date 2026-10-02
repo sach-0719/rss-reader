@@ -1,3 +1,23 @@
+/* ==================================================
+   【解決】共有・QRボタンのクリックすり抜けを強制解除
+   ================================================== */
+.custom-share-trigger,
+.custom-qr-trigger,
+.custom-share-trigger i,
+.custom-qr-trigger i {
+  pointer-events: auto !important; /* クリックの検知を100%強制的に有効化 */
+  cursor: pointer !important;      /* マウスを乗せたときに確実に指マークにする */
+}
+
+/* ==================================================
+   css/rss.css の一番上に追加してください
+   ================================================== */
+
+body {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
 
 /* =========================
    CSS変数（テーマ基盤）
@@ -107,29 +127,100 @@ a {
 .dropdown-content li:hover {
   background: rgba(144, 202, 249, 0.15);
 }
-
-/* =========================
-   datepicker（重要）
-========================= */
+/* ==================================================
+   1. デザイン・色（ユーザー様の既存設定を100%維持）
+   ================================================== */
 .datepicker-modal {
-  background: var(--card);
-  color: var(--text);
+  background: var(--card) !important;
+  color: var(--text) !important;
 }
 
 .datepicker-date-display {
-  background-color: var(--primary);
+  background-color: var(--primary) !important;
 }
 
 .datepicker-table td button {
-  color: var(--text);
+  color: var(--text) !important;
 }
 
 .datepicker-table td.is-selected {
-  background-color: var(--primary);
-  color: #fff;
+  background-color: var(--primary) !important;
+  color: #fff !important;
 }
 
-/* =========================
+/* ==================================================
+   2. 横はみ出しの根本解決（スマホ画面での縦並び化）
+   ================================================== */
+/* 
+   横幅が狭い画面（例: 600px以下）のときに、
+   PC用の横並びを完全に解除し、要素を「縦」に綺麗に整列させます。
+*/
+@media only screen and (max-width: 600px) {
+
+  /* カレンダーの土台（モーダル）を縦並びに強制変更 */
+  div.datepicker-modal,
+  .datepicker-container {
+    display: flex !important;
+    flex-direction: column !important;
+    max-width: 90vw !important;  /* 画面幅の90%に収める */
+    width: 100% !important;
+    height: auto !important;
+    max-height: 90vh !important; /* 縦もはみ出さないように制限 */
+    overflow: hidden !important;
+  }
+
+  /* 
+    【一番のポイント】
+    左側にあった青い日付表示（.datepicker-date-display）を「上部」に移動し、
+    高さを抑えてコンパクトな横並び（年、月日）にします。
+  */
+  div.datepicker-modal .datepicker-date-display {
+    width: 100% !important;
+    height: auto !important;
+    padding: 15px 10px !important;
+    display: flex !important;
+    flex-direction: row !important;      /* 内部の文字を横並びに */
+    justify-content: space-around !important;
+    align-items: center !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 
+    右側にあったカレンダー本体（.datepicker-calendar-container）を、
+    青いヘッダーの「真下」に100%の幅で配置します。
+  */
+  div.datepicker-modal .datepicker-calendar-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 10px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 日付のテーブルも横幅いっぱいに引き伸ばす */
+  div.datepicker-modal table.datepicker-table {
+    width: 100% !important;
+    margin: 0 auto !important;
+  }
+
+  /* 下部のCANCEL / OK ボタンエリアが崩れるのを防ぐ */
+  div.datepicker-modal .datepicker-footer {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    padding: 10px !important;
+    box-sizing: border-box !important;
+  }
+}
+
+/* ==================================================
+   3. 入力欄（input）の当たり判定（横幅いっぱい）
+   ================================================== */
+input.datepicker {
+  width: 100% !important;
+  display: block !important;
+}
+
+/*=================
    RSSカード（統一）
 ========================= */
 .card,
@@ -230,4 +321,128 @@ input:focus {
 
 body.dark-mode .category-all-label span::after {
   color: #aaa;
+}
+headline {
+  line-height: 1.2;
+  line-break: normal;
+  line-break: anywhere; 
+
+}
+/* ==================================================
+   【確定】カラースキーム変数設計（サイドバー対応版） (css/rss.css)
+   ================================================== */
+
+/* --- A. 通常時（ライトテーマ）の色定義 --- */
+:root {
+  --app-bg: #f3f4f6;       /* 画面全体の背景 */
+  --app-text: #111827;     /* 通常の文字色 */
+  --app-text-muted: #4b5563; /* 本文などの薄い文字色 */
+  --card-bg: #ffffff;      /* カードやモーダルの背景 */
+  --card-border: #e5e7eb;  /* カードの枠線 */
+  --input-bg: #f9fafb;     /* 入力欄の背景 */
+  --input-border: #d1d5db; /* 入力欄の枠線 */
+  --footer-bg: #f9fafb;    /* カード下部の背景 */
+  
+  /* 【追加】サイドバー専用のカラー */
+  --sidebar-bg: #ffffff;    /* サイドバーの背景 */
+  --sidebar-text: #374151;  /* サイドバーのリンク文字色 */
+  --sidebar-hover: #f3f4f6; /* マウスを乗せた時の背景色 */
+}
+
+/* --- B. ダークモード時の色定義（ここで自由に色を調整できます） --- */
+html.dark {
+  --app-bg: #111827;       /* 漆黒の背景 */
+  --app-text: #f9fafb;     /* 白い文字色 */
+  --app-text-muted: #d1d5db; /* 薄いグレーの文字色 */
+  --card-bg: #1f2937;      /* 濃いグレーのカード背景 */
+  --card-border: #374151;  /* ダークな枠線 */
+  --input-bg: #374151;     /* 入力欄をダークに */
+  --input-border: #4b5563; /* 入力欄の枠線 */
+  --footer-bg: #111827;    /* カード下部をさらに暗く */
+  
+  /* 【追加】ダークモード時のサイドバー専用のカラー */
+  --sidebar-bg: #1f2937;    /* サイドバーの背景をカードと同じ濃いグレーに */
+  --sidebar-text: #f9fafb;  /* サイドバーの文字色をクッキリした白に */
+  --sidebar-hover: #374151; /* マウスを乗せた時の背景色（少し明るいグレー） */
+}
+
+/* --- C. 定義した変数を各要素に強制適用するルール --- */
+body {
+  background-color: var(--app-bg) !important;
+  color: var(--app-text) !important;
+  font-family: 'M PLUS Rounded 1c', sans-serif !important;
+}
+
+/* ニュースカード・検索モーダル・QRモーダルの背景と線 */
+.bg-white, 
+#search-modal > div,
+#qr-modal > div {
+  background-color: var(--card-bg) !important;
+  border-color: var(--card-border) !important;
+  color: var(--app-text) !important;
+}
+
+/* --------------------------------------------------
+   ★【最重要】サイドバー専用の上書き指定
+   -------------------------------------------------- */
+/* サイドバー本体の背景色を強制制御 */
+#nav-mobile {
+  background-color: var(--sidebar-bg) !important;
+  color: var(--app-text) !important;
+}
+
+/* メニューのタイトルやラベル文字 */
+#nav-mobile h5,
+#nav-mobile label {
+  color: var(--app-text) !important;
+}
+
+/* 動的に追加されるRSSリストやお気に入りリンクの文字色とホバー */
+#nav-mobile a,
+#nav-mobile .rss-item,
+#nav-mobile ul li a {
+  color: var(--sidebar-text) !important;
+  background-color: transparent;
+}
+
+/* マウスを乗せた（ホバーした）ときの背景色の変化も変数で制御 */
+#nav-mobile a:hover,
+#nav-mobile .rss-item:hover,
+#nav-mobile ul li a:hover {
+  background-color: var(--sidebar-hover) !important;
+  color: var(--sidebar-text) !important;
+}
+
+/* -------------------------------------------------- */
+
+/* 記事のタイトル・見出しの文字色 */
+h2, h3, h5, .text-gray-900 {
+  color: var(--app-text) !important;
+}
+
+/* 記事の本文・説明文の文字色 */
+p, .text-gray-600, .text-gray-500 {
+  color: var(--app-text-muted) !important;
+}
+
+/* 詳細検索内の入力欄 */
+input[type="text"] {
+  background-color: var(--input-bg) !important;
+  color: var(--app-text) !important;
+  border-color: var(--input-border) !important;
+}
+
+/* 記事カードの下部ボタンエリア */
+.border-t {
+  border-color: var(--card-border) !important;
+}
+.bg-gray-50 {
+  background-color: var(--footer-bg) !important;
+}
+.white {
+  background-color: #FFFFFF !important;
+}
+
+.white-text {
+  color: #FFFFFF !important;
 }

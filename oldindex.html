@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>News-Spot</title>
+  <!-- 独自カレンダー用CSS -->
+  <link rel="stylesheet" href="css/calendar.css">
+  
+  <!-- Font -->
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c&display=swap" rel="stylesheet">
+
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+  <!-- Materialize -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+
+  <!-- 自作CSS -->
+  <link rel="stylesheet" href="css/rss.css">
+</head>
+
+<body>
+
+<!-- =========================
+  ナビ
+========================= -->
+<nav class="grey darken-3">
+  <div class="nav-wrapper container">
+    <a href="#" data-target="nav-mobile" class="sidenav-trigger show-on-large">
+      <i class="material-icons white-text">menu</i>
+    </a>
+  </div>
+</nav>
+
+<!-- =========================
+  サイドバー
+========================= -->
+<ul id="nav-mobile" class="sidenav">
+  <li>
+    <h5 style="padding:10px;">メニュー</h5>
+  </li>
+
+  <li style="padding:10px;">
+    <input id="rss-file-input" type="file" accept=".xml,.rss">
+  </li>
+
+  <li>
+    <div id="rss-list"></div>
+  </li>
+  <li>
+    <a href="info.html" class="waves-effect">
+      <i class="material-icons">help</i>このサイトについて
+    </a>
+  </li>
+  <li>
+    <div class="input-field">
+      <select id="theme-select">
+        <option value="light">ライトテーマ</option>
+        <option value="dark">ダークテーマ</option>
+        <option value="system">システム</option>
+      </select>
+      <label>テーマ切替</label>
+    </div>
+  </li>
+</ul>
+
+<!-- =========================
+  タイトル
+========================= -->
+<h2 class="center headline" id="site-title">News-Spot</h2>
+<h5 class="center light" id="site-description">RSSニュースリーダー</h5>
+
+<!-- 詳細検索モーダル起動ボタン -->
+<div class="center" style="margin:20px 0;">
+  <a class="btn modal-trigger black" href="#search-modal">
+    <i class="material-icons left">search</i>
+    詳細検索
+  </a>
+</div>
+
+<!-- =========================
+  コンテンツ（Tailwind CSS 完全対応版）
+========================= -->
+<div class="max-w-4xl mx-auto px-4 py-8">
+  
+  <!-- JavaScript無効時の警告枠をTailwindのモダンな警告デザインに修正 -->
+  <noscript>
+    <div class="bg-yellow-50 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded shadow mb-6">
+      <p class="font-bold text-base mb-1">JavaScriptが無効になっています</p>
+      <p class="text-sm">このサイトはJavascriptを必要とします。JavaScriptを有効にしてください。</p>
+    </div>
+  </noscript>
+  
+  <!-- フィーチャー枠（お気に入りや注目記事の挿入領域） -->
+  <div id="featured-container" class="mb-8"></div>
+  
+  <!-- 記事一覧（スマホでは1列、PCでは綺麗に2列に並ぶ頑丈なグリッド） -->
+  <div id="news-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+
+</div>
+
+<!-- =========================
+  詳細検索モーダル
+========================= -->
+<div id="search-modal" class="modal">
+  <div class="modal-content">
+    <h5>詳細検索</h5>
+
+    <div class="input-field">
+      <input id="search-keyword" type="text">
+      <label for="search-keyword">キーワード</label>
+    </div>
+
+    <div id="category-checklist"></div>
+
+    <!-- 
+      ★修正ポイント: 
+      Materializeのバグを回避するため class="datepicker" を撤去し、
+      readonlyを付与して自作スクリプト側で安全に入力を制御します。
+    -->
+    <div class="input-field">
+      <input id="date-from" type="text" placeholder="日付を選択" readonly>
+      <label for="date-from" class="active">開始日</label>
+    </div>
+
+    <div class="input-field">
+      <input id="date-to" type="text" placeholder="日付を選択" readonly>
+      <label for="date-to" class="active">終了日</label>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <a class="modal-close btn-flat"><i class="material-icons">close</i></a>
+    <a id="search-apply" class="btn blue modal-close"><i class="material-icons left">search</i> 検索実行</a>
+  </div>
+</div>
+
+<!-- =========================
+  【新規】独自設計カレンダーのモーダル構造
+========================= -->
+<div class="custom-datepicker-overlay" id="datepicker-overlay">
+  <div class="custom-datepicker-modal">
+    <!-- 左側（スマホでは上部）：選択日表示 -->
+    <div class="datepicker-side-display">
+      <div class="display-year" id="display-year"></div>
+      <div class="display-date" id="display-date"></div>
+    </div>
+    <!-- 右側（スマホでは下部）：カレンダー本体 -->
+    <div class="datepicker-main-container">
+      <div class="datepicker-header">
+        <button class="nav-btn" id="prev-btn">&lt;</button>
+        <div class="current-month-year" id="current-month-year"></div>
+        <button class="nav-btn" id="next-btn">&gt;</button>
+      </div>
+      <!-- 7列グリッド -->
+      <div class="datepicker-grid" id="datepicker-grid"></div>
+      <!-- 下部ボタンエリア -->
+      <div class="datepicker-actions">
+        <button class="action-btn" id="cancel-btn">CANCEL</button>
+        <button class="action-btn" id="ok-btn">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =========================
+  QRモーダル
+========================= -->
+<div id="qr-modal" class="modal">
+  <div class="modal-content">
+    <h5 class="center">QRコード</h5>
+    <!-- ローディング表示 -->
+    <div id="qr-loading" class="center">
+      <p style="margin:0;font-size:0.9rem;color:#777;">QRコード生成中...</p>
+      <div class="progress" style="max-width:250px;margin:15px auto;">
+        <div class="indeterminate"></div>
+      </div>
+    </div>
+    <!-- QRコード表示エリア -->
+    <div style="text-align:center;">
+      <img id="qr-image" class="responsive-img" alt="QR Code" style="display:none;width:250px;max-width:100%;margin:20px auto;">
+      <button class="btn black center" id="qr-download-btn" style="margin: 0 auto;">
+        <i class="material-icons left">download</i>QRコードをダウンロード
+      </button>
+      <button class="btn black center" id="qr-share-btn" style="margin: 0 auto;">
+        <i class="material-icons left">share</i>QRコードを共有
+      </button>
+      <button class="btn black center" id="link-copy-btn" style="margin: 0 auto;">
+        <i class="material-icons left">content_copy</i>リンクをコピー
+      </button>
+      <p id="qr-url" class="grey-text text-darken-1" style="word-break:break-all;margin-top:15px;"></p>
+    </div>
+  </div>
+  <a href="#!" class="modal-close btn-flat"><i class="material-icons">close</i></a>
+</div>
+
+<!-- =========================
+  スクリプト読み込み
+========================= -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+<script src="js/rss.js"></script>
+<script src="js/qrload.js"></script>
+<!-- 独自カレンダー用JS -->
+<script src="js/calendar.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  M.AutoInit();
+
+  const select = document.getElementById("theme-select");
+
+  function applyTheme(mode){
+    document.body.classList.remove("dark-mode");
+
+    if(mode === "dark"){
+      document.body.classList.add("dark-mode");
+    } else if(mode === "system"){
+      const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      if(isDark) document.body.classList.add("dark-mode");
+    }
+
+    localStorage.setItem("theme", mode);
+  }
+
+  const saved = localStorage.getItem("theme") || "system";
+  applyTheme(saved);
+
+  const selects = document.querySelectorAll('select');
+  M.FormSelect.init(selects);
+
+  document.addEventListener("change", (e) => {
+    if (e.target.id === "theme-select") {
+      applyTheme(e.target.value);
+    }
+  });
+});
+</script>
+
+</body>
+</html>

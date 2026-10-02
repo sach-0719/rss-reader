@@ -1,6 +1,6 @@
-// =========================
-// RSS STORE（統一版）
-// =========================
+// ==================================================
+// 1. RSS STORE（お気に入りの保存・復元ロジック）
+// ==================================================
 const RSSStore = {
   key: "rss_list",
 
@@ -14,7 +14,6 @@ const RSSStore = {
 
   save(item) {
     const list = this.getList();
-
     if (list.length >= 10) list.shift();
 
     list.push({
@@ -32,28 +31,28 @@ const RSSStore = {
   }
 };
 
-
-// =========================
-// RSS SCANNER（1つだけ！）
-// =========================
+// ==================================================
+// 2. RSS SCANNER
+// ==================================================
 class RssScanner {
-
   constructor(containerId) {
     this.container = document.getElementById(containerId);
     this.allItems = [];
 
     if (!this.container) {
-      console.error("news-container が見つかりません");
+      console.error("指定されたコンテナが見つかりません");
     }
   }
 
-  // -------------------------
+  // 画像URLを安全かつ確実に抽出するロジック
   getImage(item) {
     const enclosure = item.querySelector("enclosure");
     if (enclosure?.getAttribute("url")) return enclosure.getAttribute("url");
 
-    const media = item.getElementsByTagName("media:thumbnail")[0];
-    if (media?.getAttribute("url")) return media.getAttribute("url");
+    const media = item.getElementsByTagName("media:thumbnail");
+    if (media.length > 0 && media[0].getAttribute("url")) {
+      return media[0].getAttribute("url");
+    }
 
     const desc = item.querySelector("description")?.textContent || "";
     const match = desc.match(/<img[^>]+src=["'](.*?)["']/i);
@@ -65,7 +64,7 @@ class RssScanner {
     const link = item.querySelector("link");
     if (!link) return "#";
 
-    const text = link.textContent;
+    const text = link.textContent.trim();
     const href = link.getAttribute?.("href");
 
     if (text?.startsWith("http")) return text;
@@ -82,198 +81,201 @@ class RssScanner {
     return (text || "").replace(/<[^>]+>/g, "").trim();
   }
 
-  // -------------------------
+  // 画面へニュースカードを描画する処理（Tailwind最適化）
+  // ==================================================
+  // 【完全連動・確定版】ニュースカード描画 ＆ イベントバインド処理
+  // ==================================================
   render(items) {
+    if (!this.container) return;
     this.container.innerHTML = "";
 
     Array.from(items).slice(0, 50).forEach(item => {
-
       const title = item.querySelector("title")?.textContent || "（無題）";
-      const desc =
-        item.querySelector("description")?.textContent ||
-        item.querySelector("summary")?.textContent ||
-        "";
-
+      const desc = item.querySelector("description")?.textContent || item.querySelector("summary")?.textContent || "";
       const link = this.getLink(item);
       const image = this.getImage(item);
       const category = this.getCategory(item);
-      const dateInfo = this.formatDate(item.querySelector("pubDate")?.textContent);
+      const dateInfo = this.formatDate(item.querySelector("pubDate")?.textContent || item.querySelector("updated")?.textContent);
 
       const div = document.createElement("div");
-      div.className = "card article";
+      div.className = "bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md border border-gray-200 dark:border-gray-700 flex flex-col justify-between h-full transform transition hover:-translate-y-0.5 hover:shadow-lg";
 
-      // ★カードUIは一切変更していない
       div.innerHTML = `
-        <div class="card-image">
-          <img src="${image}" onerror="this.src='noimage.jpg'">
+        <div class="w-full h-48 overflow-hidden bg-gray-200 dark:bg-gray-700">
+          <img src="${image}" onerror="this.src='noimage.jpg'" class="w-full h-full object-cover">
         </div>
 
-        <div class="card-content">
-
-          <div style="
-            display:inline-block;
-            margin-bottom:8px;
-            padding:3px 10px;
-            font-size:11px;
-            border-radius:20px;
-            background:#e3f2fd;
-            color:#1565c0;
-            font-weight:bold;
-          ">
+        <div class="p-5 flex-1 flex flex-col">
+          <div class="inline-block self-start mb-3 px-2.5 py-0.5 text-xs font-bold rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
             ${category}
           </div>
 
-          <div style="color:#999;font-size:12px;margin-bottom:10px;">
-            <i class="material-icons" style="font-size:14px;">access_time</i>
-            ${dateInfo.relative}
-            <span style="font-size:11px;color:#bbb;margin-left:6px;">
-              （${dateInfo.exact}）
-            </span>
+          <div class="flex items-center text-xs text-gray-400 dark:text-gray-500 mb-2">
+            <i class="material-icons text-sm mr-1">access_time</i>
+            <span>${dateInfo.relative}</span>
+            <span class="ml-2 opacity-60">（${dateInfo.exact}）</span>
           </div>
 
-          <span class="card-title">${title}</span>
-          <p>${this.clean(desc)}</p>
+          <h3 class="text-base font-bold mb-2 text-gray-900 dark:text-white line-clamp-2">${title}</h3>
+          <p class="text-xs text-gray-600 dark:text-gray-300 line-clamp-3">${this.clean(desc)}</p>
         </div>
 
-        <div class="card-action">
-          <a href="${link}" class="left" target="_blank">
-            <i class="material-icons blue-text">open_in_new</i>
+        <div class="px-5 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-start space-x-4">
+          <a href="${link}" target="_blank" class="text-blue-500 hover:text-blue-600 flex items-center">
+            <i class="material-icons text-xl">open_in_new</i>
           </a>
-
-          <!-- 共有ボタン（常に描画） -->
-          <a href="#!" class="share-btn left" 
-            data-title="${title}" 
-            data-link="${link}">
-            <i class="material-icons purple-text">share</i>
-          </a>
-
-          <a href="#!" class="qr-btn left" data-link="${link}">
-            <i class="material-icons green-text">qr_code</i>
-          </a>
+          <button class="custom-share-trigger text-purple-500 hover:text-purple-600 flex items-center bg-none border-none p-0 cursor-pointer">
+            <i class="material-icons text-xl">share</i>
+          </button>
+          <button class="custom-qr-trigger text-green-500 hover:text-green-600 flex items-center bg-none border-none p-0 cursor-pointer">
+            <i class="material-icons text-xl">qr_code</i>
+          </button>
         </div>
       `;
 
+      // --- 【解決の核】新しく生まれたボタンに対し、その場で直接100%確実に機能を紐付けます ---
+      
+      // 1. 共有ボタンの処理
+      const shareBtn = div.querySelector(".custom-share-trigger");
+      if (shareBtn) {
+        shareBtn.addEventListener("click", async (e) => {
+          e.preventDefault();
+          if (!navigator.share) {
+            alert("このブラウザは共有機能に対応していません");
+            return;
+          }
+          try {
+            await navigator.share({ title: title, url: link });
+          } catch (err) {
+            if (err.name !== "AbortError") console.error(err);
+          }
+        });
+      }
+
+      // 2. QRコードボタンの処理
+      const qrBtn = div.querySelector(".custom-qr-trigger");
+      if (qrBtn) {
+        qrBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          
+          const qrImage = document.getElementById("qr-image");
+          if (qrImage) {
+            qrImage.src = `https://qrserver.com{encodeURIComponent(link)}`;
+            qrImage.style.display = 'block';
+          }
+
+          const qrUrlText = document.getElementById("qr-url");
+          if (qrUrlText) qrUrlText.textContent = link;
+
+          const qrLoading = document.getElementById("qr-loading");
+          if (qrLoading) qrLoading.style.display = 'none';
+
+          // Tailwindの検索モーダルと同じ仕組みで、hiddenを外して手前に表示
+          const qrModal = document.getElementById("qr-modal");
+          if (qrModal) {
+            qrModal.classList.replace('hidden', 'flex');
+          }
+        });
+      }
+
       this.container.appendChild(div);
     });
+    
+    // 3. 【おまけ】QRモーダルの閉じるボタンのイベントをここで一度だけ安全にバインド
+    const qrClose = document.getElementById('qr-modal-close');
+    const qrModalElement = document.getElementById('qr-modal');
+    if (qrClose && qrModalElement && !qrClose.dataset.bound) {
+      qrClose.dataset.bound = "true";
+      qrClose.addEventListener('click', () => {
+        qrModalElement.classList.replace('flex', 'hidden');
+      });
+      qrModalElement.addEventListener('click', (e) => {
+        if (e.target === qrModalElement) qrModalElement.classList.replace('flex', 'hidden');
+      });
+    }
   }
 
-  // -------------------------
-loadFromXMLText(text) {
+  loadFromXMLText(text) {
+    const xml = new DOMParser().parseFromString(text, "text/xml");
+    const channel = xml.querySelector("channel");
 
-  const xml = new DOMParser().parseFromString(text, "text/xml");
+    const siteTitle = channel?.querySelector("title")?.textContent?.trim() || "News-Spot";
+    const siteDesc = channel?.querySelector("description")?.textContent?.trim() || "RSSニュースリーダー";
 
-  const channel = xml.querySelector("channel");
+    const titleEl = document.getElementById("site-title");
+    const descEl = document.getElementById("site-description");
 
-  const siteTitle =
-    channel?.querySelector("title")?.textContent?.trim() || "News-Spot";
+    if (titleEl) titleEl.textContent = siteTitle;
+    if (descEl) descEl.textContent = siteDesc;
 
-  const siteDesc =
-    channel?.querySelector("description")?.textContent?.trim() || "RSSニュースリーダー";
+    let items = xml.getElementsByTagName("item");
+    if (!items.length) items = xml.getElementsByTagName("entry");
 
-  const titleEl = document.getElementById("site-title");
-  const descEl = document.getElementById("site-description");
+    this.allItems = Array.from(items);
 
-  if (titleEl) titleEl.textContent = siteTitle;
-  if (descEl) descEl.textContent = siteDesc;
+    this.render(this.allItems);
+    this.updateCategoryCheckboxes();
+  }
 
-  let items = xml.getElementsByTagName("item");
-  if (!items.length) items = xml.getElementsByTagName("entry");
+  updateCategoryCheckboxes() {
+    const container = document.getElementById("category-checklist");
+    if (!container) return;
 
-  this.allItems = Array.from(items);
+    const categories = [...new Set(this.allItems.map(i => this.getCategory(i)))];
 
-this.render(this.allItems);
-this.updateCategoryCheckboxes();  // ←これ追加
-updateIndeterminateState();
-}
+    let html = `
+      <div class="flex items-center space-x-2 py-1">
+        <input id="category-all" type="checkbox" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+        <span id="category-all-text" class="text-sm font-medium text-gray-700 dark:text-gray-300">すべて</span>
+      </div>
+    `;
 
-  // -------------------------
-updateCategoryCheckboxes() {
-  const container = document.getElementById("category-checklist");
-  if (!container) return;
+    categories.forEach(c => {
+      html += `
+        <div class="flex items-center space-x-2 py-1">
+          <input type="checkbox" class="category-item rounded border-gray-300 text-blue-600 focus:ring-blue-500" value="${c}" checked />
+          <span class="text-sm text-gray-600 dark:text-gray-400">${c}</span>
+        </div>
+      `;
+    });
 
-  const categories = [...new Set(
-    this.allItems.map(i => this.getCategory(i))
-  )];
+    container.innerHTML = html;
+  }
 
-  container.innerHTML = `
-    <p>
-      <label>
-        <input id="category-all" type="checkbox" />
-        <span id="category-all-text">すべて</span>
-      </label>
-    </p>
+  applyFilter() {
+    const keyword = (document.getElementById("search-keyword")?.value || "").toLowerCase();
+    const checkedCategories = Array.from(document.querySelectorAll(".category-item:checked")).map(el => el.value);
+    const allCb = document.getElementById("category-all");
+    const allChecked = allCb ? (allCb.checked || allCb.indeterminate) : true;
 
-    ${
-      categories.length > 0
-        ? categories.map(c => `
-          <p>
-            <label>
-              <input type="checkbox" class="category-item" value="${c}" />
-              <span>${c}</span>
-            </label>
-          </p>
-        `).join("")
-        : ""
-    }
-  `;
-}
-  // -------------------------
-applyFilter() {
+    const from = document.getElementById("date-from")?.value;
+    const to = document.getElementById("date-to")?.value;
 
-  const keyword =
-    (document.getElementById("search-keyword")?.value || "").toLowerCase();
+    const filtered = this.allItems.filter(item => {
+      const title = item.querySelector("title")?.textContent || "";
+      const desc = item.querySelector("description")?.textContent || "";
+      const cat = this.getCategory(item);
 
-  const checkedCategories =
-    Array.from(document.querySelectorAll(".category-item:checked"))
-      .map(el => el.value);
+      const dateText = item.querySelector("pubDate")?.textContent || item.querySelector("updated")?.textContent;
+      const date = dateText ? new Date(dateText) : null;
 
-  const allChecked =
-    document.querySelector(".category-all")?.checked ||
-    document.querySelector(".category-all")?.indeterminate;
+      const matchKeyword = !keyword || title.toLowerCase().includes(keyword) || desc.toLowerCase().includes(keyword);
+      const matchCategory = allChecked || checkedCategories.length === 0 || checkedCategories.includes(cat);
 
-  const from = document.getElementById("date-from")?.value;
-  const to = document.getElementById("date-to")?.value;
+      let matchDate = true;
+      if (from && date) matchDate = date >= new Date(from);
+      if (to && date) matchDate = matchDate && date <= new Date(to);
 
-  const filtered = this.allItems.filter(item => {
+      return matchKeyword && matchCategory && matchDate;
+    });
 
-    const title = item.querySelector("title")?.textContent || "";
-    const desc = item.querySelector("description")?.textContent || "";
-    const cat = this.getCategory(item);
+    this.render(filtered);
+  }
 
-    const dateText = item.querySelector("pubDate")?.textContent;
-    const date = dateText ? new Date(dateText) : null;
-
-    const matchKeyword =
-      !keyword ||
-      title.toLowerCase().includes(keyword) ||
-      desc.toLowerCase().includes(keyword);
-
-    const matchCategory =
-      allChecked ||
-      checkedCategories.length === 0 ||
-      checkedCategories.includes(cat);
-
-    let matchDate = true;
-    if (from && date) matchDate = date >= new Date(from);
-    if (to && date) matchDate = matchDate && date <= new Date(to);
-
-    return matchKeyword && matchCategory && matchDate;
-  });
-
-  this.render(filtered);
-}
-
-  // -------------------------
   formatDate(pubDateText) {
-
-    if (!pubDateText) {
-      return { relative: "日時不明", exact: "" };
-    }
-
+    if (!pubDateText) return { relative: "日時不明", exact: "" };
     const date = new Date(pubDateText);
-    if (isNaN(date)) {
-      return { relative: "日時不明", exact: "" };
-    }
+    if (isNaN(date.getTime())) return { relative: "日時不明", exact: "" };
 
     const now = new Date();
     const diff = now - date;
@@ -284,7 +286,6 @@ applyFilter() {
     const day = Math.floor(hour / 24);
 
     let relative = "";
-
     if (min < 1) relative = `たった今（${sec}秒前）`;
     else if (hour < 1) relative = `${min}分前`;
     else if (day < 1) relative = `${hour}時間前`;
@@ -292,29 +293,18 @@ applyFilter() {
     else if (day < 30) relative = `${Math.floor(day / 7)}週間前`;
     else if (day < 365) relative = `${Math.floor(day / 30)}か月前`;
     else {
-      const y = date.getFullYear();
-      const m = String(date.getMonth() + 1).padStart(2, "0");
-      const d = String(date.getDate()).padStart(2, "0");
-      const h = String(date.getHours()).padStart(2, "0");
-      const mi = String(date.getMinutes()).padStart(2, "0");
-
-      relative = `${y}/${m}/${d} ${h}:${mi}`;
+      relative = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")}`;
     }
 
-    const exact =
-      `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")} ` +
-      `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
-
+    const exact = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
     return { relative, exact };
   }
 }
 
-
-// =========================
-// SIDEBAR
-// =========================
+// ==================================================
+// 3. SIDEBAR（お気に入りRSSリストの読み込み・Tailwind対応）
+// ==================================================
 class Sidebar {
-
   constructor(scanner) {
     this.scanner = scanner;
     this.container = document.getElementById("rss-list");
@@ -328,221 +318,109 @@ class Sidebar {
       const rss = RSSStore.get(el.dataset.id);
       if (rss?.xml) {
         this.scanner.loadFromXMLText(rss.xml);
+        // RSSクリック時に自動でサイドバーと黒いマスクを閉じる
+        const sideNav = document.getElementById('nav-mobile');
+        const sideNavOverlay = document.getElementById('nav-mobile-overlay');
+        if (sideNav && sideNavOverlay) {
+          sideNav.classList.add('-translate-x-full');
+          sideNavOverlay.classList.add('hidden');
+        }
       }
     });
   }
 
   render() {
     if (!this.container) return;
-
     this.container.innerHTML = "";
 
     RSSStore.getList().forEach(rss => {
-
-      if (!rss?.id || !rss?.title) return;
-
-      const li = document.createElement("li");
-      const a = document.createElement("a");
-
-      a.className = "waves-effect rss-item";
-      a.href = "#!";
-      a.dataset.id = rss.id;
-
-      // ⭐サイドバーはRSSタイトル
-      a.textContent = rss.title;
-
-      li.appendChild(a);
-      this.container.appendChild(li);
-    });
-  }
+if (!rss?.id || !rss?.title) return;
+const li = document.createElement("li");
+const a = document.createElement("a");
+// ★ 修正点: Materializeの「waves-effect」を排除し、Tailwindのリスト用デザインに置換
+a.className = "rss-item flex items-center p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition text-sm font-medium cursor-pointer";
+a.href = "#!";
+a.dataset.id = rss.id;
+a.textContent = rss.title;
+li.appendChild(a);
+this.container.appendChild(li);
+});
 }
-
-
-// =========================
-// FILE MANAGER
-// =========================
+}
+// ==================================================
+// 4. FILE MANAGER
+// ==================================================
 class FileManager {
-
-  constructor(scanner, sidebar) {
-    const input = document.getElementById("rss-file-input");
-
-    input?.addEventListener("change", (e) => {
-
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-
-      reader.onload = (ev) => {
-
-        const xml = ev.target.result;
-        const parsed = new DOMParser().parseFromString(xml, "text/xml");
-
-        const rssTitle =
-          parsed.querySelector("channel > title")?.textContent?.trim() ||
-          parsed.querySelector("feed > title")?.textContent?.trim() ||
-          file.name.replace(/\.[^/.]+$/, "");
-
-        const rssDesc =
-          parsed.querySelector("channel > description")?.textContent?.trim() ||
-          parsed.querySelector("feed > subtitle")?.textContent?.trim() ||
-          "";
-
-        RSSStore.save({
-          id: Date.now().toString(),
-          title: rssTitle,
-          description: rssDesc,
-          xml
-        });
-
-        sidebar.render();
-        scanner.loadFromXMLText(xml);
-      };
-
-      reader.readAsText(file);
-    });
-  }
+constructor(scanner, sidebar) {
+const input = document.getElementById("rss-file-input");
+input?.addEventListener("change", (e) => {
+const file = e.target.files[0];
+if (!file) return;
+const reader = new FileReader();
+reader.onload = (ev) => {
+const xml = ev.target.result;
+const parsed = new DOMParser().parseFromString(xml, "text/xml");
+const rssTitle =
+parsed.querySelector("channel > title")?.textContent?.trim() ||
+parsed.querySelector("feed > title")?.textContent?.trim() ||
+file.name.replace(/.[^/.]+$/, "");
+const rssDesc =
+parsed.querySelector("channel > description")?.textContent?.trim() ||
+parsed.querySelector("feed > subtitle")?.textContent?.trim() ||
+"";
+RSSStore.save({
+id: Date.now().toString(),
+title: rssTitle,
+description: rssDesc,
+xml
+});
+sidebar.render();
+scanner.loadFromXMLText(xml);
+};
+reader.readAsText(file);
+});
 }
-
-
-// =========================
-// INIT
-// =========================
+}
+// ==================================================
+// 5. INIT（Materializeの初期化命令を完全撤廃）
+// ==================================================
 document.addEventListener("DOMContentLoaded", () => {
-
-  M.AutoInit();
-
-  const scanner = new RssScanner("news-container");
-  const sidebar = new Sidebar(scanner);
-  new FileManager(scanner, sidebar);
-
-  document.getElementById("search-apply")
-    ?.addEventListener("click", () => scanner.applyFilter());
-
-  // =========================
-  // チェックボックス制御（ここに追加）
-  // =========================
-  document.addEventListener("change", (e) => {
-    const target = e.target;
-
-    // 「すべて」
-    if (target.id === "category-all") {
-      const checked = target.checked;
-
-      document.querySelectorAll(".category-item").forEach(cb => {
-        cb.checked = checked;
-      });
-
-      target.indeterminate = false;
-      updateIndeterminateState();
-      return;
-    }
-
-    // 個別
-    if (target.classList.contains("category-item")) {
-      updateIndeterminateState();
-    }
-  });
-
-  // =========================
-  // THEME などその他の処理はそのまま
-  // =========================
+// ★ 修正点: クラッシュの原因だった M.AutoInit() は完全削除
+window.scanner = new RssScanner("news-container");
+const sidebar = new Sidebar(window.scanner);
+new FileManager(window.scanner, sidebar);
+document.getElementById("search-apply")
+?.addEventListener("click", () => window.scanner.applyFilter());
+// 検索窓のリアルタイムタイピング連動
+const searchKeyword = document.getElementById("search-keyword");
+if (searchKeyword) {
+searchKeyword.addEventListener("input", () => {
+window.scanner.applyFilter();
 });
-const select = document.getElementById("theme-select");
-
-function applyTheme(mode){
-
-  if(mode === "dark"){
-    document.body.classList.add("dark-mode");
-  } else if(mode === "light"){
-    document.body.classList.remove("dark-mode");
-  } else {
-    const isDark =
-      window.matchMedia("(prefers-color-scheme: dark)").matches;
-
-    document.body.classList.toggle("dark-mode", isDark);
-  }
-
-  localStorage.setItem("theme", mode);
 }
-
-// 初期化
-const saved = localStorage.getItem("theme") || "system";
-applyTheme(saved);
-
-if(select){
-  select.value = saved;
-
-  select.addEventListener("change", (e) => {
-    applyTheme(e.target.value);
-  });
-}
-
-// =========================
-// QR CODE
-// =========================
-document.addEventListener("click", (e) => {
-
-  const btn = e.target.closest(".qr-btn");
-  if (!btn) return;
-
-  const url = btn.dataset.link;
-
-  document.getElementById("qr-image").src =
-    `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
-
-  document.getElementById("qr-url").textContent = url;
-
-  const modal = M.Modal.getInstance(document.getElementById("qr-modal"));
-  modal.open();
+// チェックボックス制御の連動ロジック
+document.addEventListener("change", (e) => {
+const target = e.target;
+const allCb = document.getElementById("category-all");
+// 「すべて」
+if (target.id === "category-all") {
+const checked = target.checked;
+document.querySelectorAll(".category-item").forEach(cb => {
+cb.checked = checked;
 });
-
-document.addEventListener("click", async (e) => {
-
-  const btn = e.target.closest(".share-btn");
-  if (!btn) return;
-
-  const title = btn.dataset.title || "";
-  const url = btn.dataset.link || "";
-
-  if (!navigator.share) {
-    alert("このブラウザは共有機能に対応していません");
-    return;
-  }
-
-  try {
-    await navigator.share({
-      title: title,
-      url: url
-    });
-  } catch (err) {
-    // キャンセルは無視
-    if (err.name !== "AbortError") {
-      console.error(err);
-    }
-  }
-});
-function updateIndeterminateState() {
-  const all = document.getElementById("category-all");
-  const items = document.querySelectorAll(".category-item");
-  const checked = document.querySelectorAll(".category-item:checked");
-
-  if (!all || items.length === 0) return;
-
-  const total = items.length;
-  const checkedCount = checked.length;
-
-  if (checkedCount === 0) {
-    all.checked = false;
-    all.indeterminate = false;
-  } 
-  else if (checkedCount === total) {
-    all.checked = true;
-    all.indeterminate = false;
-  } 
-  else {
-    all.checked = false;
-    all.indeterminate = true;
-  }
+if (allCb) allCb.indeterminate = false;
+window.scanner.applyFilter();
+return;
 }
-// イベントリスナー
+// 個別
+if (target.classList.contains("category-item")) {
+const items = document.querySelectorAll(".category-item");
+const checked = document.querySelectorAll(".category-item:checked");
+if (allCb) {
+allCb.checked = items.length === checked.length;
+allCb.indeterminate = checked.length > 0 && checked.length < items.length;
+}
+window.scanner.applyFilter();
+}
+});
+});
