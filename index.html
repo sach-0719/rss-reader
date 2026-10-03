@@ -680,7 +680,41 @@
 
   </div>
 </div>
+<!-- 画像デザイン再現モーダル（背景色を直接CSS指定） -->
+<div id="weather-detail-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+  
+  <!-- メインカード：styleで背景色 #aeb0a7 を確実に適用 -->
+  <div class="relative w-full max-w-xs rounded-2xl text-white shadow-2xl p-8 flex flex-col items-center justify-center text-center" id="background">
+    
+    <!-- 閉じるボタン -->
+    <button id="close-weather-detail" class="absolute top-3 right-3 text-white/70 hover:text-white transition">
+      <i class="material-icons text-xl" style="color: white;">close</i>
+    </button>
 
+    <!-- 1. 天気アイコン -->
+    <i id="detail-icon" class="material-icons text-7xl text-white mb-1 drop-shadow-sm" style="color:white">cloud</i>
+
+    <!-- 2. 都市名 -->
+    <h4 id="detail-city" class="text-2xl font-bold tracking-wide mb-1 text-white">東京都</h4>
+
+    <!-- 3. 現在気温 -->
+    <div id="detail-temp" class="text-6xl font-extrabold tracking-tight mb-1 text-white">20°C</div>
+
+    <!-- 4. 最高 / 最低気温 -->
+    <div id="detail-temp-range" class="text-lg font-bold text-white/90 mb-6">20°C/18°C</div>
+
+    <!-- 5. 湿度 & 風速：styleで枠の背景色 #d8d8d3 を確実に適用 -->
+    <div class="w-full rounded-2xl p-4 text-left text-gray-900 font-bold space-y-1 shadow-inner" style="background-color: #d8d8d3;">
+      <div class="text-sm tracking-wide" style="color:black">
+        湿度:<span id="detail-humidity">67%</span>
+      </div>
+      <div class="text-sm tracking-wide" style="color:black">
+        風速:<span id="detail-wind">3.6m/s</span>
+      </div>
+    </div>
+
+  </div>
+</div>
 <!-- バックエンドスクリプトの読み込み -->
 <script src="js/rss.js"></script>
 <script src="js/qrload.js"></script>
@@ -841,5 +875,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 <script src="js/weather.js"></script>
+
 </body>
 </html>
