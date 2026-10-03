@@ -469,3 +469,43 @@ input[type="text"] {
 #rss-tabs .rss-tab {
   flex: 0 0 auto;
 }
+/* ダークモード時の設定モーダルのサイドバー文字色を強力に補正 */
+html.dark #default-modal aside button.settings-tab,
+html.dark #default-modal aside button.settings-tab span,
+html.dark #default-modal aside button.settings-tab svg,
+html.dark #default-modal aside a span,
+html.dark #default-modal aside a svg {
+  color: #e5e7eb !important; /* 明るいグレー (gray-200) */
+  opacity: 1 !important;
+}
+
+/* 選択中のタブ（外観）の背景と文字色 */
+html.dark #default-modal aside button.settings-tab.bg-blue-50,
+html.dark #default-modal aside button.settings-tab.bg-blue-100 {
+  background-color: #2563eb !important; /* blue-600 */
+}
+
+html.dark #default-modal aside button.settings-tab.bg-blue-50 span,
+html.dark #default-modal aside button.settings-tab.bg-blue-100 span,
+html.dark #default-modal aside button.settings-tab.bg-blue-50 svg,
+html.dark #default-modal aside button.settings-tab.bg-blue-100 svg {
+  color: #ffffff !important; /* 白文字 */
+}
+
+/* ホバー時の背景と文字色 */
+html.dark #default-modal aside button.settings-tab:hover,
+html.dark #default-modal aside a:hover {
+  background-color: #374151 !important; /* gray-700 */
+}
+
+html.dark #default-modal aside button.settings-tab:hover span,
+html.dark #default-modal aside a:hover span,
+html.dark #default-modal aside button.settings-tab:hover svg,
+html.dark #default-modal aside a:hover svg {
+  color: #ffffff !important;
+}
+/* ナビゲーションのぼかし効果と透過を直接指定 */
+nav.sticky {
+  -webkit-backdrop-filter: blur(16px) !important;    /* Safari / iOS 用 */
+  backdrop-filter: blur(16px) !important;            /* 標準ブラウザ用 (backdrop-blur-lg 相当) */
+}

@@ -349,7 +349,7 @@ class RssScanner {
               "
               title="QRコード"
             >
-              <i class="material-icons text-xl">
+              <i class="material-icons text-xl ">
                 qr_code
               </i>
             </button>

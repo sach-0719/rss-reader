@@ -19,6 +19,8 @@
 
   <!-- 5. 自作CSS -->
   <link rel="stylesheet" href="css/rss.css">
+  <!-- 6. Flowbite-->
+   <link href="https://cdn.jsdelivr.net/npm/flowbite@4.0.1/dist/flowbite.min.css" rel="stylesheet" />
 </head>
 
 <body class="bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100 min-h-screen font-sans transition-colors duration-200">
@@ -26,16 +28,21 @@
 <!-- =========================
   ナビゲーション
 ========================= -->
-<nav class="bg-gray-800 text-white shadow-md">
+<nav class="sticky top-0 z-30 bg-gray-800/80 backdrop-blur-lg text-white transition-all">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex items-center justify-between h-16">
-      <div class="flex items-center">
-        <!-- サイドバーを開くボタン -->
-        <button id="menu-trigger" class="text-gray-300 hover:text-white p-2 rounded-md focus:outline-none">
-          <i class="material-icons white-text">menu</i>
-        </button>
-        <span class="ml-4 text-xl font-bold tracking-wider text-blue-400">News-Spot</span>
-      </div>
+    <div class="flex items-center h-16 w-full">
+      
+      <!-- 左側のメニューボタン -->
+      <button id="menu-trigger" class="text-gray-300 hover:text-white p-2 rounded-md focus:outline-none ">
+        <i class="material-icons white-text">menu</i>
+      </button>
+
+      <!-- 右側の天気アイコン＋気温グループ（ml-auto で右端へ） -->
+      <button id="weather-trigger" class="ml-auto flex items-center gap-2.5 text-gray-300 hover:text-white p-2 rounded-md focus:outline-none">
+        <i class="material-icons white-text" id="weather-icon">wb_sunny</i>
+        <span class="text-xl font-bold tracking-wider text-white-400" id="ondo">20°C</span>
+      </button>
+
     </div>
   </div>
 </nav>
@@ -49,26 +56,15 @@
     <h5 class="text-lg font-bold">メニュー</h5>
     <button id="menu-close" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"><i class="material-icons">close</i></button>
   </div>
+  
   <!-- index.html のサイドバー内、ファイル入力欄の下あたりに追記 -->
-<div class="mb-4">
-  <input id="rss-file-input" type="file" accept=".xml,.rss" class="block w-full text-sm text-gray-500 ...">
-</div>
+  <!-- <div class="mb-4">
+ <input id="rss-file-input" type="file" accept=".xml,.rss" class="block w-full text-sm text-gray-500 ...">
+</div> -->
 
-<!-- =========================
-  ★【追加】URLからインポートするフォーム
-========================= -->
-  <label for="rss-url-input" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">URLからインポート</label>
-  <div class="flex space-x-2">
-    <input id="rss-url-input" type="url" placeholder="https://example.com" class="flex-1 p-1.5 text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded outline-none focus:ring-1 focus:ring-blue-500">
-    <button id="rss-url-submit" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded shadow transition">
-      追加
-    </button>
-  </div>
+
 
   <div class="p-4">
-    <!-- ファイル入力 -->
-
-
     <!-- RSSリスト -->
     <div id="rss-list" class="space-y-1 mb-6"></div>
 
@@ -78,17 +74,14 @@
         <a href="info.html" class="flex items-center p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition">
           <i class="material-icons mr-3 text-gray-500">help</i>このサイトについて
         </a>
-      </li>
-      <li>
-        <!-- テーマ切替セレクター -->
-        <div class="relative mt-4">
-          <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">テーマ切替</label>
-          <select id="theme-select" class="block w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-sm focus:ring-blue-500 focus:border-blue-500">
-            <option value="light">ライトテーマ</option>
-            <option value="dark">ダークテーマ</option>
-            <option value="system">システム</option>
-          </select>
-        </div>
+        <a 
+        class="flex items-center p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition cursor-pointer" 
+        id="settings"
+            data-modal-target="default-modal"
+            data-modal-toggle="default-modal"
+    >
+          <i class="material-icons mr-3 text-gray-500">settings</i>設定
+        </a>
       </li>
     </ul>
   </div>
@@ -153,7 +146,7 @@
   >
     <i class="material-icons text-lg">chevron_right</i>
   </button>
-
+  
 </div>
 
   <!-- タイトル -->
@@ -264,7 +257,7 @@
 </div>
 
 <!-- =========================
-  【Tailwind版】QRモーダル（千切れていた部分を完全に修復）
+  【Tailwind版】QRモーダル
 ========================= -->
 <div id="qr-modal" class="fixed inset-0 bg-black bg-opacity-60 z-40 hidden items-center justify-center p-4">
   <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full shadow-2xl overflow-hidden p-6 relative">
@@ -300,10 +293,553 @@
   </div>
 </div>
 
+<!-- 設定モーダル -->
+<div
+  id="default-modal"
+  tabindex="-1"
+  aria-hidden="true"
+  class="hidden fixed inset-0 z-50 items-center justify-center bg-black/50 p-4 dark:bg-black/70"
+>
+  <!-- Modal Container -->
+  <div
+    class="relative flex h-[80vh] w-full max-w-5xl overflow-hidden rounded-xl bg-white text-gray-900 shadow-2xl dark:bg-gray-900 dark:text-white"
+  >
+
+    <!-- ======================================== -->
+    <!-- Sidebar -->
+    <!-- ======================================== -->
+    <aside
+      class="flex w-64 shrink-0 flex-col border-r border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800"
+    >
+
+      <!-- Sidebar Header -->
+      <div
+        class="flex h-16 items-center border-b border-gray-200 px-5 dark:border-gray-700"
+      >
+        <div class="flex items-center gap-2">
+          <i class="material-icons text-gray-600 dark:text-gray-300">
+            settings
+          </i>
+
+          <span class="text-lg font-semibold text-gray-900 dark:text-white">
+            設定
+          </span>
+        </div>
+      </div>
+
+
+      <!-- Navigation -->
+      <nav class="flex-1 overflow-y-auto p-4">
+
+        <ul class="space-y-1.5">
+          <!-- インポート -->
+          <li>
+            <button
+              type="button"
+              data-tab="import"
+              class="settings-tab flex w-full items-center rounded-lg px-3 py-2.5 text-left bg-blue-100 text-blue-700 transition-colors dark:!bg-blue-600 dark:!text-white"          <svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                <svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+  <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12V7.914a1 1 0 0 1 .293-.707l3.914-3.914A1 1 0 0 1 9.914 3H18a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-4m5-13v4a1 1 0 0 1-1 1H5m0 6h9m0 0-2-2m2 2-2 2"/>
+</svg>
+
+
+              <span class="ms-3 font-medium">
+                RSSインポート
+              </span>
+            </button>
+          </li>
+          <!-- 外観 -->
+          <li>
+            <button
+              type="button"
+              data-tab="appearance"
+              class="settings-tab flex w-full items-center rounded-lg px-3 py-2.5 text-left text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:!text-gray-200 dark:hover:!bg-gray-700 dark:hover:!text-white"            >
+              <svg
+                class="h-6 w-6 shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 7h.01m3.486 1.513h.01m-6.978 0h.01M6.99 12H7m9 4h2.706a1.957 1.957 0 0 0 1.883-1.325A9 9 0 1 0 3.043 12.89 9.1 9.1 0 0 0 8.2 20.1a8.62 8.62 0 0 0 3.769.9 2.013 2.013 0 0 0 2.03-2v-.857A2.036 2.036 0 0 1 16 16Z"
+                />
+              </svg>
+
+              <span class="ms-3 font-medium">
+                外観
+              </span>
+            </button>
+          </li>
+
+          <!-- 天気API -->
+          <li>
+            <button
+              type="button"
+              data-tab="weather"
+              class="settings-tab flex w-full items-center rounded-lg px-3 py-2.5 text-left text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:!text-gray-200 dark:hover:!bg-gray-700 dark:hover:!text-white"
+            >
+            <svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5V3m0 18v-2M7.05 7.05 5.636 5.636m12.728 12.728L16.95 16.95M5 12H3m18 0h-2M7.05 16.95l-1.414 1.414M18.364 5.636 16.95 7.05M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/>
+            </svg>
+
+
+              <span class="ms-3 font-medium">
+                天気設定
+              </span>
+            </button>
+          </li>
+          <!-- このサイトについて -->
+          <li>
+            <button
+              type="button"
+              data-tab="about"
+              class="settings-tab flex w-full items-center rounded-lg px-3 py-2.5 text-left text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:!text-gray-200 dark:hover:!bg-gray-700 dark:hover:!text-white"
+            >
+              <svg
+                class="h-6 w-6 shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M10 11h2v5m-2 0h4m-2.592-8.5h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                />
+              </svg>
+
+              <span class="ms-3 font-medium">
+                このサイトについて
+              </span>
+            </button>
+          </li>
+
+
+          <!-- お知らせ -->
+          <li>
+            <button
+              type="button"
+              data-tab="notice"
+              class="settings-tab flex w-full items-center rounded-lg px-3 py-2.5 text-left text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:!text-gray-200 dark:hover:!bg-gray-700 dark:hover:!text-white"
+            >
+              <svg
+                class="h-6 w-6 shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 5.365V3m0 2.365a5.338 5.338 0 0 1 5.133 5.368v1.8c0 2.386 1.867 2.982 1.867 4.175 0 .593 0 1.292-.538 1.292H5.538C5 18 5 17.301 5 16.708c0-1.193 1.867-1.789 1.867-4.175v-1.8A5.338 5.338 0 0 1 12 5.365ZM8.733 18c.094.852.306 1.54.944 2.112a3.48 3.48 0 0 0 4.646 0c.638-.572 1.236-1.26 1.33-2.112h-6.92Z"
+                />
+              </svg>
+
+              <span class="ms-3 font-medium">
+                お知らせ
+              </span>
+            </button>
+          </li>
+
+
+          <!-- 免責事項 -->
+          <li>
+            <button
+              type="button"
+              data-tab="disclaimer"
+              class="settings-tab flex w-full items-center rounded-lg px-3 py-2.5 text-left text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:!text-gray-200 dark:hover:!bg-gray-700 dark:hover:!text-white"
+            >
+            <svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 11.917 9.724 16.5 19 7.5"/>
+            </svg>
+
+
+              <span class="ms-3 font-medium">
+                免責事項
+              </span>
+            </button>
+          </li>
+            
+        </ul>
+
+      </nav>
+
+
+      <!-- Sidebar Footer -->
+      <div class="border-t border-gray-200 p-4 dark:border-gray-700">
+        <a
+          href="https://sach-0719.github.io/yuito8-22site/"
+          class="flex items-center rounded-lg px-3 py-2.5 text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:!text-gray-200 dark:hover:!bg-gray-700 dark:hover:!text-white"
+        >
+          <svg
+            class="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0 0a8.949 8.949 0 0 0 4.951-1.488A3.987 3.987 0 0 0 13 16h-2a3.987 3.987 0 0 0-3.951 3.512A8.948 8.948 0 0 0 12 21Zm3-11a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+            />
+          </svg>
+          <span class="ms-3 font-medium">
+          開発者のサイト
+          </span>
+        </a>
+      </div>
+
+    </aside>
+
+
+    <!-- ======================================== -->
+    <!-- Main Content -->
+    <!-- ======================================== -->
+    <section class="flex min-w-0 flex-1 flex-col bg-white dark:bg-gray-900">
+
+      <!-- Header -->
+      <header
+        class="flex h-16 shrink-0 items-center justify-between border-b border-gray-200 px-6 dark:border-gray-700"
+      >
+
+
+        <!-- Close -->
+        <button
+          type="button"
+          data-modal-hide="default-modal"
+          class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-white"
+        >
+          <svg
+            class="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18 18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      </header>
+
+
+      <!-- ======================================== -->
+      <!-- Tab Contents -->
+      <!-- ======================================== -->
+      <div class="flex-1 overflow-y-auto p-6">
+        <!-- 外観 -->
+        <div id="tab-import" class="tab-content">
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+            RSSインポート
+          </h3>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            サイトの見た目や表示方法を設定できます。
+          </p>
+            <!-- index.html のサイドバー内、ファイル入力欄の下あたりに追記 -->
+          <div class="mb-4">
+            <input id="rss-file-input" type="file" accept=".xml,.rss" class="block w-full text-sm text-gray-500 ...">
+          </div>
+
+          <!-- Dark Mode Setting -->
+            <label for="rss-url-input" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">URLからインポート</label>
+            <div class="flex space-x-2">
+              <input id="rss-url-input" type="url" placeholder="https://example.com" class="flex-1 p-1.5 text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded outline-none focus:ring-1 focus:ring-blue-500">
+              <button id="rss-url-submit" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded shadow transition">
+                追加
+              </button>
+            </div>
+
+        </div>
+
+        <!-- 外観 -->
+        <div id="tab-appearance" class="tab-content hidden">
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+            外観設定
+          </h3>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            サイトの見た目や表示方法を設定できます。
+          </p>
+
+          <!-- Dark Mode Setting -->
+          <div class="relative mt-6 max-w-2xl ">
+            <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">テーマ切替</label>
+            <select id="theme-select" class="block w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-sm text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+              <option value="light">ライトテーマ</option>
+              <option value="dark">ダークテーマ</option>
+              <option value="system">システム</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- このサイトについて -->
+        <div id="tab-about" class="tab-content hidden">
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+            このサイトについて
+          </h3>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            このサイトに関する情報です。
+          </p>
+        </div>
+
+        <!-- お知らせ -->
+        <div id="tab-notice" class="tab-content hidden">
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+            お知らせ
+          </h3>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            現在のお知らせはありません。
+          </p>
+        </div>
+
+        <!-- 免責事項 -->
+        <div id="tab-disclaimer" class="tab-content hidden">
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+            免責事項
+          </h3>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            当サイトの利用に関する注意事項です。
+                <h6 class="header col s12 light"> 本サイトはユーザーがアップロードしたRSSファイルの内容を表示するツールです。<br>取得されるコンテンツの著作権は各配信元に帰属します。<br>コンテンツの利用規約については、各配信元の指示に従ってください。<br>QRコードは株式会社デンソーウェーブの登録商標です。<br>本サイトのコードには、一部AI生成のものが含まれています。</h6>
+          </p>
+        </div>
+
+        <!-- 天気設定 -->
+<div id="tab-weather" class="tab-content hidden space-y-5">
+  <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+    天気設定
+  </h3>
+  <!-- APIキー設定エリア -->
+  <div class="space-y-1.5">
+    <!-- ★ dark:text-gray-200 でダークモード時の文字色を明瞭化 -->
+    <label for="weather-api-key-input" class="lock w-full  border-gray-300">
+      OpenWeatherMap APIキー
+    </label>
+    <div class="flex space-x-2">
+      <input 
+        id="weather-api-key-input" 
+        type="text" 
+        placeholder="APIキーを入力" 
+        class="flex-1 p-1.5 text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded outline-none focus:ring-1 focus:ring-blue-500 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+      >
+      <button 
+        id="weather-api-submit" 
+        class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded shadow transition shrink-0"
+      >
+        保存
+      </button>
+    </div>
+  </div>
+
+  <!-- 地域設定エリア -->
+  <div class="space-y-1.5">
+    <!-- ★ dark:text-gray-200 でダークモード時の文字色を明瞭化 -->
+    <label for="weather-api-key-input" class="lock w-full  border-gray-300">
+      表示地域名
+    </label>
+    <div class="flex space-x-2">
+      <input 
+        id="weather-city-input" 
+        type="text" 
+        placeholder="例: Tokyo, Osaka" 
+        class="flex-1 p-1.5 text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded outline-none focus:ring-1 focus:ring-blue-500 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+      >
+      <button 
+        id="weather-local-submit" 
+        class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded shadow transition shrink-0"
+      >
+        保存
+      </button>
+    </div>
+  </div>
+  <ul>
+  <li>
+    APIキーはご自身でご用意ください。無料です。(2026/10/3時点)
+  </li>
+  <li>
+    地域名は必ず英語で入力してください。
+  </li>
+</ul>
+</div>
+<div>
+
+</div>
+
+      </div>
+
+    </section>
+
+  </div>
+</div>
+
 <!-- バックエンドスクリプトの読み込み -->
 <script src="js/rss.js"></script>
 <script src="js/qrload.js"></script>
 <script src="js/calendar.js"></script>
 <script src="testjs.js"></script>
 <script src="js/rsstw.js"></script>
-<script src="js/init.js">
+<script src="js/init.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flowbite@4.0.1/dist/flowbite.min.js"></script>
+
+<!-- Script -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const tabs = document.querySelectorAll('.settings-tab');
+  const contents = document.querySelectorAll('.tab-content');
+  const title = document.getElementById('settings-title');
+  const description = document.getElementById('settings-description');
+  const themeSelect = document.getElementById('theme-select');
+
+  const tabInfo = {
+    appearance: {
+      title: '外観',
+      description: 'サイトの表示設定'
+    },
+    about: {
+      title: 'このサイトについて',
+      description: 'このサイトに関する情報'
+    },
+    notice: {
+      title: 'お知らせ',
+      description: '最新のお知らせを確認できます'
+    },
+    disclaimer: {
+      title: '免責事項',
+      description: '当サイトの利用に関する注意事項'
+    }
+  };
+
+
+  // ========================================
+  // タブ切り替え
+  // ========================================
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const target = tab.dataset.tab;
+
+      // すべてのタブを非アクティブ状態に戻す
+      tabs.forEach(item => {
+        item.classList.remove(
+          'bg-blue-100',
+          'text-blue-700',
+          'dark:!bg-blue-600',
+          'dark:!text-white'
+        );
+
+        item.classList.add(
+          'text-gray-700',
+          'hover:bg-gray-100',
+          'hover:text-gray-900',
+          'dark:!text-gray-200',
+          'dark:hover:!bg-gray-700',
+          'dark:hover:!text-white'
+        );
+      });
+
+      // クリックされたタブをアクティブにする
+      tab.classList.remove(
+        'text-gray-700',
+        'hover:bg-gray-100',
+        'hover:text-gray-900',
+        'dark:!text-gray-200',
+        'dark:hover:!bg-gray-700',
+        'dark:hover:!text-white'
+      );
+
+      tab.classList.add(
+        'bg-blue-100',
+        'text-blue-700',
+        'dark:!bg-blue-600',
+        'dark:!text-white'
+      );
+
+      // コンテンツ切り替え
+      contents.forEach(content => {
+        content.classList.add('hidden');
+      });
+
+      const targetContent = document.getElementById(`tab-${target}`);
+
+      if (targetContent) {
+        targetContent.classList.remove('hidden');
+      }
+
+      // ヘッダー変更
+      if (tabInfo[target]) {
+        title.textContent = tabInfo[target].title;
+        description.textContent = tabInfo[target].description;
+      }
+    });
+  });
+
+
+  // ========================================
+  // テーマ切り替え
+  // ========================================
+
+  function applyTheme(theme) {
+    const html = document.documentElement;
+
+    if (theme === 'dark') {
+      html.classList.add('dark');
+    }
+
+    else if (theme === 'light') {
+      html.classList.remove('dark');
+    }
+
+    else if (theme === 'system') {
+      const systemDark =
+        window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+      html.classList.toggle('dark', systemDark);
+    }
+  }
+
+
+  // 保存済みテーマ
+  const savedTheme =
+    localStorage.getItem('theme') || 'system';
+
+  themeSelect.value = savedTheme;
+
+  // 初期テーマ適用
+  applyTheme(savedTheme);
+
+
+  // セレクト変更時
+  themeSelect.addEventListener('change', () => {
+    const theme = themeSelect.value;
+
+    localStorage.setItem('theme', theme);
+
+    applyTheme(theme);
+  });
+
+
+  // OSのテーマ変更を監視
+  window
+    .matchMedia('(prefers-color-scheme: dark)')
+    .addEventListener('change', () => {
+
+      if (themeSelect.value === 'system') {
+        applyTheme('system');
+      }
+
+    });
+
+});
+</script>
+<script src="js/weather"></script>
+</body>
+</html>
