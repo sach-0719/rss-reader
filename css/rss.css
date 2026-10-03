@@ -506,6 +506,7 @@ html.dark #default-modal aside a:hover svg {
 }
 /* ナビゲーションのぼかし効果と透過を直接指定 */
 nav.sticky {
-  -webkit-backdrop-filter: blur(16px) !important;    /* Safari / iOS 用 */
+  background-color: #111827c6 !important; /* bg-gray-800/80 相当 */
+  -webkit-backdrop-filter: blur(8px) !important;    /* Safari / iOS 用 */
   backdrop-filter: blur(16px) !important;            /* 標準ブラウザ用 (backdrop-blur-lg 相当) */
 }

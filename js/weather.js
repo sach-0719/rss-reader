@@ -1,5 +1,5 @@
 // ========================================
-// OpenWeatherMap 天気取得 & スマホ風詳細モーダル
+// OpenWeatherMap 天気取得 & 詳細モーダル
 // ========================================
 
 const STORAGE_KEY_API = 'openweather_api_key';
@@ -7,9 +7,11 @@ const STORAGE_KEY_CITY = 'openweather_city_name';
 const DEFAULT_CITY = 'Tokyo';
 
 let currentWeatherData = null;
+let currentForecastData = null;
+let currentAqiData = null;
+let leafletMapInstance = null; // 雨雲レーダーマップのインスタンス保持用
 
 function getMaterialIconName(iconCode) {
-  
   switch (iconCode) {
     case '01d': return 'wb_sunny';
     case '01n': return 'nights_stay';
@@ -24,11 +26,10 @@ function getMaterialIconName(iconCode) {
     case '50d': case '50n': return 'filter_drama';
     default: return 'wb_sunny';
   }
-
 }
-function getColor(iconCode)
-{
-    switch (iconCode) {
+
+function getColor(iconCode) {
+  switch (iconCode) {
     case '01d': return '#f59842';
     case '01n': return '#0b3163';
     case '02d': return '#aeb0a7';
@@ -43,21 +44,23 @@ function getColor(iconCode)
     default: return '#f59842';
   }
 }
-function getWeatherGradient(iconCode) {
-  if (!iconCode) return 'from-blue-500 via-indigo-600 to-slate-900';
-  if (iconCode.endsWith('n')) return 'from-slate-800 via-indigo-950 to-black';
 
-  switch (iconCode.slice(0, 2)) {
-    case '01': return 'from-sky-400 via-blue-500 to-indigo-700';
-    case '02': case '03': case '04': return 'from-blue-400 via-slate-500 to-gray-700';
-    case '09': case '10': case '11': return 'from-slate-600 via-slate-700 to-zinc-900';
-    case '13': return 'from-blue-200 via-indigo-300 to-slate-700';
-    default: return 'from-blue-500 via-indigo-600 to-slate-900';
+/**
+ * AQI（大気質指数）の数値テキスト変換
+ */
+function getAqiLabel(aqi) {
+  switch (aqi) {
+    case 1: return '良い (1)';
+    case 2: return '普通 (2)';
+    case 3: return 'やや悪 (3)';
+    case 4: return '悪い (4)';
+    case 5: return '非常に悪い (5)';
+    default: return '--';
   }
 }
 
 /**
- * 天気データの取得
+ * 天気データ（現在・大気質・5日間予報）の取得
  */
 async function fetchWeather() {
   const weatherTrigger = document.getElementById('weather-trigger');
@@ -105,8 +108,14 @@ async function fetchWeather() {
     const iconCode = data.weather[0]?.icon || '01d';
 
     iconElement.textContent = getMaterialIconName(iconCode);
-    backgroundElement.style.backgroundColor = getColor(iconCode);
+    if (backgroundElement) {
+      backgroundElement.style.backgroundColor = getColor(iconCode);
+    }
     tempElement.textContent = `${temp}°C`;
+
+    // 緯度・経度をもとにサブデータ（大気質・5日間予報）を追加取得
+    const { lat, lon } = data.coord;
+    fetchAdditionalWeatherData(lat, lon, apiKey);
 
   } catch (error) {
     console.error('Weather API Error:', error);
@@ -117,10 +126,62 @@ async function fetchWeather() {
 }
 
 /**
- * 詳細モーダルを開く
+ * 大気質・5日間予報データを非同期で取得
  */
+async function fetchAdditionalWeatherData(lat, lon, apiKey) {
+  try {
+    // 1. 大気質指数（AQI）
+    const aqiUrl = `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}`;
+    const aqiRes = await fetch(aqiUrl);
+    if (aqiRes.ok) {
+      currentAqiData = await aqiRes.json();
+    }
+
+    // 2. 5日間/3時間予報
+    const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&lang=ja&appid=${apiKey}`;
+    const forecastRes = await fetch(forecastUrl);
+    if (forecastRes.ok) {
+      currentForecastData = await forecastRes.json();
+    }
+  } catch (err) {
+    console.error('Sub Weather Data Fetch Error:', err);
+  }
+}
+
 /**
- * 詳細モーダルを開く（画像レイアウト準拠）
+ * 雨雲レーダー（Leaflet.js）の描画
+ */
+function initRadarMap(lat, lon, apiKey) {
+  const mapContainer = document.getElementById('radar-map');
+  if (!mapContainer || typeof L === 'undefined') return;
+
+  // 既存マップがあれば削除して初期化
+  if (leafletMapInstance) {
+    leafletMapInstance.remove();
+    leafletMapInstance = null;
+  }
+
+  const map = L.map('radar-map', {
+    zoomControl: false,
+    attributionControl: false
+  }).setView([lat, lon], 8);
+
+  // 地図背景（OpenStreetMap）
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+  // 雨雲レーダー（OpenWeatherMap Tile API）
+const radarUrl = `https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${apiKey}`;  L.tileLayer(radarUrl, { opacity: 0.65 }).addTo(map);
+
+  leafletMapInstance = map;
+
+  // モーダル表示時のマップサイズ調整
+  setTimeout(() => {
+    map.invalidateSize();
+  }, 200);
+}
+
+/**
+ * 詳細モーダルを開く
  */
 function openWeatherDetailModal() {
   if (!currentWeatherData) return;
@@ -129,23 +190,86 @@ function openWeatherDetailModal() {
   if (!modal) return;
 
   const iconCode = currentWeatherData.weather[0]?.icon || '';
+  const apiKey = (localStorage.getItem(STORAGE_KEY_API) || '').trim();
 
-  // 各要素へデータを流し込み
+  // カード背景色の設定
+  const bgElement = document.getElementById('background');
+  if (bgElement) {
+    bgElement.style.backgroundColor = getColor(iconCode);
+  }
+
+  // 基本データ
   document.getElementById('detail-icon').textContent = getMaterialIconName(iconCode);
   document.getElementById('detail-city').textContent = currentWeatherData.name || '東京都';
-  document.getElementById('detail-temp').textContent = `${Math.round(currentWeatherData.main.temp)}°C`; 
-  document.getElementById('background').style.backgroundColor = getColor(iconCode);
-  // 最高/最低気温の表示 format: "20°C/18°C"
+  document.getElementById('detail-temp').textContent = `${Math.round(currentWeatherData.main.temp)}°C`;
+
+  // 最高/最低気温
   const maxTemp = Math.round(currentWeatherData.main.temp_max);
   const minTemp = Math.round(currentWeatherData.main.temp_min);
   document.getElementById('detail-temp-range').textContent = `${maxTemp}°C/${minTemp}°C`;
 
-  // 湿度と風速
+  // 湿度・風速・気圧
   document.getElementById('detail-humidity').textContent = `${currentWeatherData.main.humidity}%`;
   document.getElementById('detail-wind').textContent = `${currentWeatherData.wind.speed}m/s`;
+  
+  // ★ 追加: 気圧
+  const pressureEl = document.getElementById('detail-pressure');
+  if (pressureEl) {
+    pressureEl.textContent = `${currentWeatherData.main.pressure} hPa`;
+  }
+
+  // ★ 追加: 大気質指数 (AQI)
+  const aqiEl = document.getElementById('detail-aqi');
+  if (aqiEl) {
+    const aqiVal = currentAqiData?.list[0]?.main?.aqi;
+    aqiEl.textContent = getAqiLabel(aqiVal);
+  }
+
+  // ★ 追加: 5日間予報のレンダリング
+  renderForecastList();
+
+  // ★ 追加: 雨雲レーダーマップの表示
+  if (currentWeatherData.coord && apiKey) {
+    initRadarMap(currentWeatherData.coord.lat, currentWeatherData.coord.lon, apiKey);
+  }
 
   modal.classList.remove('hidden');
 }
+
+/**
+ * 5日間予報リストのレンダリング（正午 12:00 のデータ抽出）
+ */
+function renderForecastList() {
+  const container = document.getElementById('detail-forecast-list');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  if (!currentForecastData || !currentForecastData.list) {
+    container.innerHTML = '<p class="text-xs text-center opacity-75">予報データ読み込み中...</p>';
+    return;
+  }
+
+  // 12:00:00 の予報データを抽出（約5日分）
+  const dailyList = currentForecastData.list.filter(item => item.dt_txt.includes('12:00:00'));
+
+  dailyList.forEach(item => {
+    const date = new Date(item.dt * 1000);
+    const dayStr = `${date.getMonth() + 1}/${date.getDate()}`;
+    const icon = getMaterialIconName(item.weather[0]?.icon || '01d');
+    const temp = `${Math.round(item.main.temp)}°C`;
+
+    const row = document.createElement('div');
+    row.className = 'flex items-center justify-between text-xs py-1 border-b border-white/20 last:border-none';
+    row.innerHTML = `
+      <span class="w-10">${dayStr}</span>
+      <span class="material-icons text-base" style="color:white">${icon}</span>
+      <span class="font-bold">${temp}</span>
+    `;
+    container.appendChild(row);
+  });
+}
+
 /**
  * イベントリスナー登録
  */

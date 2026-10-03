@@ -21,6 +21,10 @@
   <link rel="stylesheet" href="css/rss.css">
   <!-- 6. Flowbite-->
    <link href="https://cdn.jsdelivr.net/npm/flowbite@4.0.1/dist/flowbite.min.css" rel="stylesheet" />
+
+   <!-- Leaflet.js (雨雲レーダー用ライブラリ) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 
 <body class="bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100 min-h-screen font-sans transition-colors duration-200">
@@ -40,7 +44,7 @@
       <!-- 右側の天気アイコン＋気温グループ（ml-auto で右端へ） -->
 <button id="weather-trigger" class="ml-auto flex items-center gap-2.5 text-gray-300 hover:text-white p-2 rounded-md focus:outline-none">
   <i class="material-icons white-text" id="weather-icon">wb_sunny</i>
-  <span class="text-xl font-bold tracking-wider text-blue-400">20°C</span>
+  <span class="text-xl font-bold tracking-wider text-white-400">20°C</span>
 </button>
 
     </div>
@@ -681,41 +685,37 @@
   </div>
 </div>
 <!-- 画像デザイン再現モーダル（背景色を直接CSS指定） -->
-<div id="weather-detail-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-  
-  <!-- メインカード：styleで背景色 #aeb0a7 を確実に適用 -->
-  <div class="relative w-full max-w-xs rounded-2xl text-white shadow-2xl p-8 flex flex-col items-center justify-center text-center" id="background">
+<div id="weather-detail-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 hidden">
+  <div id="background" class="relative w-full max-w-xs rounded-2xl text-white p-6 shadow-2xl flex flex-col items-center">
     
     <!-- 閉じるボタン -->
-    <button id="close-weather-detail" class="absolute top-3 right-3 text-white/70 hover:text-white transition">
-      <i class="material-icons text-xl" style="color: white;">close</i>
+    <button id="close-weather-detail" class="absolute top-3 right-3 text-white/80 hover:text-white">
+      <span class="material-icons" style="color:white">close</span>
     </button>
 
-    <!-- 1. 天気アイコン -->
-    <i id="detail-icon" class="material-icons text-7xl text-white mb-1 drop-shadow-sm" style="color:white">cloud</i>
+    <!-- アイコン・都市名・気温 -->
+    <span id="detail-icon" class="material-icons text-5xl mb-1" style="color: white;"></span>
+    <h3 id="detail-city" class="text-xl font-bold"></h3>
+    <div id="detail-temp" class="text-4xl font-extrabold my-2"></div>
+    <div id="detail-temp-range" class="text-xs opacity-80 mb-4"></div>
 
-    <!-- 2. 都市名 -->
-    <h4 id="detail-city" class="text-2xl font-bold tracking-wide mb-1 text-white">東京都</h4>
-
-    <!-- 3. 現在気温 -->
-    <div id="detail-temp" class="text-6xl font-extrabold tracking-tight mb-1 text-white">20°C</div>
-
-    <!-- 4. 最高 / 最低気温 -->
-    <div id="detail-temp-range" class="text-lg font-bold text-white/90 mb-6">20°C/18°C</div>
-
-    <!-- 5. 湿度 & 風速：styleで枠の背景色 #d8d8d3 を確実に適用 -->
-    <div class="w-full rounded-2xl p-4 text-left text-gray-900 font-bold space-y-1 shadow-inner" style="background-color: #d8d8d3;">
-      <div class="text-sm tracking-wide" style="color:black">
-        湿度:<span id="detail-humidity">67%</span>
-      </div>
-      <div class="text-sm tracking-wide" style="color:black">
-        風速:<span id="detail-wind">3.6m/s</span>
-      </div>
+    <!-- 詳細グリッド (湿度・風速・気圧・大気質) -->
+    <div class="grid grid-cols-2 gap-2 w-full text-xs bg-white/10 p-3 rounded-xl mb-3">
+      <div>湿度: <span id="detail-humidity" class="font-bold">--%</span></div>
+      <div>風速: <span id="detail-wind" class="font-bold">--m/s</span></div>
+      <div>気圧: <span id="detail-pressure" class="font-bold">-- hPa</span></div>
+      <div>大気質: <span id="detail-aqi" class="font-bold">--</span></div>
     </div>
 
+    <!-- 5日間予報エリア -->
+    <div class="w-full bg-white/10 p-3 rounded-xl mb-3">
+      <div class="text-[10px] font-bold opacity-75 mb-1">5日間の予報 (12:00)</div>
+      <div id="detail-forecast-list" class="space-y-1"></div>
+    </div>
+
+
   </div>
-</div>
-<!-- バックエンドスクリプトの読み込み -->
+</div><!-- バックエンドスクリプトの読み込み -->
 <script src="js/rss.js"></script>
 <script src="js/qrload.js"></script>
 <script src="js/calendar.js"></script>
