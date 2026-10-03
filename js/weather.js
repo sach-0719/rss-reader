@@ -39,20 +39,21 @@ function getMaterialIconName(iconCode) {
 async function fetchWeather() {
   const weatherTrigger = document.getElementById('weather-trigger');
   const iconElement = document.getElementById('weather-icon');
+  // ★ヌルポインタエラー防止のため、クエリセレクタを安全に指定
   const tempElement = document.querySelector('#weather-trigger span');
 
   if (!weatherTrigger || !iconElement || !tempElement) return;
 
-  const apiKey = localStorage.getItem(STORAGE_KEY_API) || '';
-  const cityName = localStorage.getItem(STORAGE_KEY_CITY) || DEFAULT_CITY;
+  const apiKey = (localStorage.getItem(STORAGE_KEY_API) || '').trim();
+  const cityName = (localStorage.getItem(STORAGE_KEY_CITY) || DEFAULT_CITY).trim();
 
-  // ★ APIキーが未設定の場合はボタン要素ごと非表示（hidden）にする
+  // APIキー未設定の場合は非表示
   if (!apiKey) {
     weatherTrigger.classList.add('hidden');
     return;
   }
 
-  // APIキーが設定されている場合は表示（hiddenクラスを削除）
+  // キーが設定されている場合は表示
   weatherTrigger.classList.remove('hidden');
 
   const apiUrl = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(cityName)}&units=metric&lang=ja&appid=${apiKey}`;
@@ -73,14 +74,14 @@ async function fetchWeather() {
     }
 
     if (!response.ok) {
-      throw new Error(`エラー: ${response.status}`);
+      throw new Error(`HTTP Error: ${response.status}`);
     }
 
     const data = await response.json();
     const temp = Math.round(data.main.temp);
-    const iconCode = data.weather[0].icon;
+    const iconCode = data.weather[0]?.icon || '01d';
 
-    // ヘッダー表示を更新
+    // ヘッダー表示を動的に更新
     iconElement.textContent = getMaterialIconName(iconCode);
     tempElement.textContent = `${temp}°C`;
 
@@ -112,7 +113,7 @@ function initWeatherSettings() {
       const newApiKey = apiKeyInput.value.trim();
       localStorage.setItem(STORAGE_KEY_API, newApiKey);
       alert('APIキーを保存しました');
-      fetchWeather(); // 保存後に表示・更新処理を再実行
+      fetchWeather();
     });
   }
 
